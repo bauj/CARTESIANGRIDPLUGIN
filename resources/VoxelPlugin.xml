@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!DOCTYPE meshers PUBLIC "" "desktop.dtd">
+
+<meshers>
+
+<meshers-group name="Voxel"
+               resources="VoxelPlugin"
+               server-lib="VoxelEngine"
+               gui-lib="VoxelPluginGUI">
+
+  <hypotheses>
+    <hypothesis type="VoxelGrid"
+                label-id="Voxel Grid"
+                icon-id="voxel.png"
+                dim="3"/>
+  </hypotheses>
+
+  <algorithms>
+    <algorithm type="Voxel_3D"
+               label-id="Voxel 3D"
+               icon-id="voxel.png"
+               hypos="VoxelGrid"
+               output="HEXA"
+               need-hyp="true"
+               dim="3"
+               support-submeshes="false">
+      <python-wrap>
+        <algo>Voxel_3D=Voxel()</algo>
+        <hypo>VoxelGrid=Grid()</hypo>
+      </python-wrap>
+    </algorithm>
+  </algorithms>
+</meshers-group>
+
+</meshers>

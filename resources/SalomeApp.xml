@@ -1,0 +1,8 @@
+<document>
+  <section name="resources">
+    <parameter name="VoxelPlugin" value="${VOXELPLUGIN_ROOT_DIR}/share/salome/resources/voxelplugin"/>
+  </section>
+  <section name="smesh_help">
+    <parameter name="User's Guide/Mesh module/Plug-ins/Voxel plugin" value="${VOXELPLUGIN_ROOT_DIR}/share/doc/salome/gui/VOXELPLUGIN/index.html"/>
+  </section>
+</document>

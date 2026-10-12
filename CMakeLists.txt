@@ -200,6 +200,8 @@ SALOME_ACCUMULATE_ENVIRONMENT(LD_LIBRARY_PATH NOCHECK ${CMAKE_INSTALL_PREFIX}/${
 # Sources 
 # ========
 
+ADD_SUBDIRECTORY(idl)
+ADD_SUBDIRECTORY(resources)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(bin)
 IF(SALOME_BUILD_TESTS)
@@ -218,7 +220,7 @@ INCLUDE(CMakePackageConfigHelpers)
 # List of targets in this project we want to make visible to the rest of the world.
 # They all have to be INSTALL'd with the option "EXPORT ${PROJECT_NAME}TargetGroup"
 SET(_${PROJECT_NAME}_exposed_targets
-  VoxelCore
+  VoxelCore VoxelEngine SalomeIDLVOXELPLUGIN
 )
 
 

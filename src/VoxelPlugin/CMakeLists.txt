@@ -1,9 +1,18 @@
 INCLUDE_DIRECTORIES(
+  ${SALOMEBOOTSTRAP_INCLUDE_DIRS}
+  ${KERNEL_INCLUDE_DIRS}
   ${OpenCASCADE_INCLUDE_DIR}
+  ${GEOM_INCLUDE_DIRS}
+  ${SMESH_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${OMNIORB_INCLUDE_DIR}
+  ${PROJECT_BINARY_DIR}/idl
 )
 
 ADD_DEFINITIONS(
+  ${OMNIORB_DEFINITIONS}
   ${OpenCASCADE_DEFINITIONS}
+  ${BOOST_DEFINITIONS}
 )
 
 # Pure OCCT core: grid and cell owner classifier
@@ -27,3 +36,38 @@ TARGET_LINK_LIBRARIES(VoxelCore
 )
 INSTALL(TARGETS VoxelCore EXPORT ${PROJECT_NAME}TargetGroup DESTINATION ${SALOME_INSTALL_LIBS})
 INSTALL(FILES ${VoxelCore_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
+
+# SMESH engine: hypothesis, algorithm, servants, factory
+SET(VoxelEngine_HEADERS
+  VoxelPlugin_Hypothesis.hxx
+  VoxelPlugin_Hypothesis_i.hxx
+)
+
+SET(VoxelEngine_SOURCES
+  VoxelPlugin_Hypothesis.cxx
+  VoxelPlugin_Hypothesis_i.cxx
+  VoxelPlugin_i.cxx
+)
+
+ADD_LIBRARY(VoxelEngine ${VoxelEngine_SOURCES})
+TARGET_LINK_LIBRARIES(VoxelEngine
+  VoxelCore
+  ${SALOMEBOOTSTRAP_SALOMELocalTrace}
+  ${SALOMEBOOTSTRAP_SALOMEBasics}
+  ${KERNEL_SalomeGenericObj}
+  ${KERNEL_SalomeNS}
+  ${KERNEL_OpUtil}
+  ${SMESH_SMDS}
+  ${SMESH_SMESHDS}
+  ${SMESH_SMESHimpl}
+  ${SMESH_SMESHEngine}
+  SalomeIDLVOXELPLUGIN
+)
+INSTALL(TARGETS VoxelEngine EXPORT ${PROJECT_NAME}TargetGroup DESTINATION ${SALOME_INSTALL_LIBS})
+INSTALL(FILES ${VoxelEngine_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
+
+SET(_bin_SCRIPTS
+  __init__.py
+  VoxelPluginBuilder.py
+)
+SALOME_INSTALL_SCRIPTS("${_bin_SCRIPTS}" ${SALOME_INSTALL_PYTHON}/salome/VoxelPlugin)

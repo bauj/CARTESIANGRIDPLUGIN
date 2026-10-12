@@ -1,0 +1,41 @@
+// Copyright (C) 2026  VOXELPLUGIN authors
+// LGPL 2.1 or later
+#ifndef _VoxelPlugin_Algorithm_IDL_
+#define _VoxelPlugin_Algorithm_IDL_
+
+#include "SALOME_Exception.idl"
+#include "SMESH_Hypothesis.idl"
+
+/*!
+ * VoxelPlugin: Cartesian staircase voxel meshing
+ */
+module VoxelPlugin
+{
+  /*!
+   * Voxel 3D algorithm: one hexahedron per grid cell owned by a solid
+   */
+  interface VoxelPlugin_Voxel_3D : SMESH::SMESH_3D_Algo
+  {
+  };
+
+  /*!
+   * Voxel grid hypothesis; axis: 0=X, 1=Y, 2=Z
+   */
+  interface VoxelPlugin_Hypothesis : SMESH::SMESH_Hypothesis
+  {
+    //! number of cells along axis (mode NbCells)
+    void   SetNbCells(in short axis, in long nb) raises (SALOME::SALOME_Exception);
+    //! wished step along axis (mode Step), adjusted to cover the extent exactly
+    void   SetStep(in short axis, in double step) raises (SALOME::SALOME_Exception);
+    //! 0 = NbCells, 1 = Step
+    short  GetMode(in short axis) raises (SALOME::SALOME_Exception);
+    long   GetNbCells(in short axis) raises (SALOME::SALOME_Exception);
+    double GetStep(in short axis) raises (SALOME::SALOME_Exception);
+
+    //! keep cells outside all solids (bound to the main shape) instead of removing them
+    void    SetKeepOutsideCells(in boolean keep);
+    boolean GetKeepOutsideCells();
+  };
+};
+
+#endif
