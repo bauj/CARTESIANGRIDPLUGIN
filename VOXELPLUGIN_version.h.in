@@ -1,0 +1,24 @@
+// Copyright (C) 2026  VOXELPLUGIN authors, LGPL 2.1
+
+#if !defined(__VOXELPLUGIN_VERSION_H__)
+#define __VOXELPLUGIN_VERSION_H__
+
+/*!
+  Specify version of SALOME VOXELPLUGIN module, as follows
+
+  VOXELPLUGIN_VERSION_MAJOR       : (integer) number identifying major version
+  VOXELPLUGIN_VERSION_MINOR       : (integer) number identifying minor version
+  VOXELPLUGIN_VERSION_MAINTENANCE : (integer) number identifying maintenance version
+  VOXELPLUGIN_VERSION_STR         : (string)  complete version number "major.minor.maintenance"
+  VOXELPLUGIN_VERSION             : (hex)     complete version number (major << 16) + (minor << 8) + maintenance
+  VOXELPLUGIN_DEVELOPMENT         : (integer) indicates development version when set to 1
+*/
+
+#define VOXELPLUGIN_VERSION_MAJOR       @SALOMEVOXELPLUGIN_MAJOR_VERSION@
+#define VOXELPLUGIN_VERSION_MINOR       @SALOMEVOXELPLUGIN_MINOR_VERSION@
+#define VOXELPLUGIN_VERSION_MAINTENANCE @SALOMEVOXELPLUGIN_PATCH_VERSION@
+#define VOXELPLUGIN_VERSION_STR         "@SALOMEVOXELPLUGIN_VERSION@"
+#define VOXELPLUGIN_VERSION             @SALOMEVOXELPLUGIN_XVERSION@
+#define VOXELPLUGIN_DEVELOPMENT         @SALOMEVOXELPLUGIN_VERSION_DEV@
+
+#endif // __VOXELPLUGIN_VERSION_H__
