@@ -1,6 +1,7 @@
 // Copyright (C) 2026  VOXELPLUGIN authors
 // LGPL 2.1 or later
 #include "VoxelPlugin_Hypothesis_i.hxx"
+#include "VoxelPlugin_Voxel_3D_i.hxx"
 
 #include <cstring>
 
@@ -16,7 +17,9 @@ extern "C"
   GenericHypothesisCreator_i* GetHypothesisCreator(const char* aHypName)
   {
     GenericHypothesisCreator_i* aCreator = 0;
-    if (strcmp(aHypName, "VoxelGrid") == 0)
+    if (strcmp(aHypName, "Voxel_3D") == 0)
+      aCreator = new VoxelPlugin_Creator_i<VoxelPlugin_Voxel_3D_i>;
+    else if (strcmp(aHypName, "VoxelGrid") == 0)
       aCreator = new VoxelPlugin_Creator_i<VoxelPlugin_Hypothesis_i>;
     return aCreator;
   }

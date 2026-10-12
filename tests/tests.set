@@ -1,3 +1,6 @@
 SET(TEST_NAMES
   voxel_hypothesis
+  voxel_four_materials
+  voxel_outside_cells
+  voxel_errors
 )

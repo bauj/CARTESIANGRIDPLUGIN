@@ -4,6 +4,7 @@ INCLUDE_DIRECTORIES(
   ${OpenCASCADE_INCLUDE_DIR}
   ${GEOM_INCLUDE_DIRS}
   ${SMESH_INCLUDE_DIRS}
+  ${MEDCOUPLING_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${OMNIORB_INCLUDE_DIR}
   ${PROJECT_BINARY_DIR}/idl
@@ -41,12 +42,16 @@ INSTALL(FILES ${VoxelCore_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
 SET(VoxelEngine_HEADERS
   VoxelPlugin_Hypothesis.hxx
   VoxelPlugin_Hypothesis_i.hxx
+  VoxelPlugin_Voxel_3D.hxx
+  VoxelPlugin_Voxel_3D_i.hxx
 )
 
 SET(VoxelEngine_SOURCES
   VoxelPlugin_Hypothesis.cxx
   VoxelPlugin_Hypothesis_i.cxx
   VoxelPlugin_i.cxx
+  VoxelPlugin_Voxel_3D.cxx
+  VoxelPlugin_Voxel_3D_i.cxx
 )
 
 ADD_LIBRARY(VoxelEngine ${VoxelEngine_SOURCES})
