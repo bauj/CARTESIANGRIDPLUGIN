@@ -222,6 +222,11 @@ INCLUDE(CMakePackageConfigHelpers)
 SET(_${PROJECT_NAME}_exposed_targets
   VoxelCore VoxelEngine SalomeIDLVOXELPLUGIN
 )
+IF(SALOME_BUILD_GUI)
+  LIST(APPEND _${PROJECT_NAME}_exposed_targets
+    VoxelPluginGUI
+  )
+ENDIF(SALOME_BUILD_GUI)
 
 
 # Add all targets to the build-tree export set
