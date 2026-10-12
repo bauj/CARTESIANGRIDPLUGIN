@@ -1,0 +1,3 @@
+SET(TEST_NAMES
+  voxel_hypothesis
+)
