@@ -136,8 +136,10 @@ bool VoxelPlugin_Classifier::BoundingBox(const TopoDS_Shape& theShape,
                                          double              theMin[3],
                                          double              theMax[3])
 {
+  // solids only: construction vertices/edges/faces of a compound must not enlarge the grid
   Bnd_Box box;
-  BRepBndLib::AddOptimal(theShape, box, /*useTriangulation=*/false, /*useShapeTolerance=*/false);
+  for (TopExp_Explorer solid(theShape, TopAbs_SOLID); solid.More(); solid.Next())
+    BRepBndLib::AddOptimal(solid.Current(), box, /*useTriangulation=*/false, /*useShapeTolerance=*/false);
   if (box.IsVoid())
     return false;
   box.Get(theMin[0], theMin[1], theMin[2], theMax[0], theMax[1], theMax[2]);

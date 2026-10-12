@@ -44,4 +44,11 @@ mesh2.Voxel().Grid(nbCells=20)
 assert mesh2.Compute(), mesh2.GetComputeErrors()
 assert any(e.code == SMESH.COMPERR_WARNING._v and "own no cell" in e.comment
            for e in mesh2.GetComputeErrors()), mesh2.GetComputeErrors()
+# a construction vertex in the compound does not enlarge the grid
+with_vertex = geompy.MakeCompound([geompy.MakeBoxDXDYDZ(10, 10, 10), geompy.MakeVertex(100, 0, 0)])
+geompy.addToStudy(with_vertex, "BoxAndVertex")
+mesh3 = smesh.Mesh(with_vertex, "BoxAndVertex")
+mesh3.Voxel().Grid(nbCells=10)
+assert mesh3.Compute(), mesh3.GetComputeErrors()
+assert mesh3.NbHexas() == 1000, mesh3.NbHexas()
 print("OK")

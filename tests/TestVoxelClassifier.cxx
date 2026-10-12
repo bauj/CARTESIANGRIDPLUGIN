@@ -7,6 +7,7 @@
 #include "VoxelPlugin_Grid.hxx"
 
 #include <BRepBuilderAPI_MakeShell.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRep_Builder.hxx>
@@ -170,6 +171,16 @@ static void openSolid()
   CHECK(c.BadSolid() == 1);
 }
 
+static void boxIgnoresNonSolids()
+{
+  // a construction vertex far away must not enlarge the grid extent
+  TopoDS_Shape vertex = BRepBuilderAPI_MakeVertex(gp_Pnt(100, 0, 0)).Shape();
+  double mn[3], mx[3];
+  CHECK(VoxelPlugin_Classifier::BoundingBox(compound({ box(0, 0, 0, 10, 10, 10), vertex }), mn, mx));
+  CHECK(std::abs(mx[0] - 10.) < 1e-6);
+  CHECK(!VoxelPlugin_Classifier::BoundingBox(compound({ vertex }), mn, mx));
+}
+
 static void threadsAgree()
 {
   VoxelPlugin_Classifier c;
@@ -192,6 +203,7 @@ int main()
   noSolid();
   openSolid();
   threadsAgree();
+  boxIgnoresNonSolids();
   std::cout << (nbFailures ? "FAILED: " : "OK ") << nbFailures << " failure(s)\n";
   return nbFailures ? 1 : 0;
 }

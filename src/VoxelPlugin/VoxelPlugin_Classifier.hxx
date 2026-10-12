@@ -35,7 +35,8 @@ public:
   //! theNbThreads <= 0: hardware concurrency. Rethrows the first exception of a worker.
   std::vector<int> Classify(const VoxelPlugin_Grid& theGrid, int theNbThreads = 0) const;
 
-  //! Tight bounding box (exact geometry, no tolerance enlargement); false if void
+  //! Tight bounding box of the solids of theShape (exact geometry, no tolerance enlargement);
+  //! false if there is no solid
   static bool BoundingBox(const TopoDS_Shape& theShape, double theMin[3], double theMax[3]);
 
 private:
