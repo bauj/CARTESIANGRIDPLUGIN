@@ -4,4 +4,5 @@ SET(TEST_NAMES
   voxel_outside_cells
   voxel_errors
   voxel_shaper_gdml
+  voxel_gdml_file
 )
