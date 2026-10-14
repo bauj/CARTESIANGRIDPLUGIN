@@ -4,12 +4,15 @@
 
 #include <BRepBndLib.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
+#include <IntCurvesFace_ShapeIntersector.hxx>
 #include <BRepGProp.hxx>
 #include <BRep_Tool.hxx>
 #include <GProp_GProps.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Lin.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
@@ -95,12 +98,45 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
   std::exception_ptr firstError;
   std::mutex         errorMutex;
 
+  // X coordinate and width of the cells, for the scanline
+  std::vector<double> cx(nx), dx(nx);
+  for (int i = 0; i < nx; ++i)
+  {
+    cx[i] = theGrid.Center(0, i);
+    dx[i] = theGrid.coords[0][i + 1] - theGrid.coords[0][i];
+  }
+
   auto work = [&]()
   {
     try
     {
-      // one classifier per solid and per thread, built on first use
-      std::vector<std::unique_ptr<BRepClass3d_SolidClassifier>> classifiers(mySolids.size());
+      // one classifier and one line intersector per solid and per thread, built on first use
+      std::vector<std::unique_ptr<BRepClass3d_SolidClassifier>>     classifiers(mySolids.size());
+      std::vector<std::unique_ptr<IntCurvesFace_ShapeIntersector>> intersectors(mySolids.size());
+      auto classifier = [&](int s) -> BRepClass3d_SolidClassifier&
+      {
+        if (!classifiers[s])
+          classifiers[s].reset(new BRepClass3d_SolidClassifier(mySolids[s]));
+        return *classifiers[s];
+      };
+      // exact state of a cell center, UNKNOWN retried at a shifted point then counted
+      auto exactInside = [&](int s, const gp_Pnt& p) -> bool
+      {
+        BRepClass3d_SolidClassifier& c = classifier(s);
+        c.Perform(p, tol);
+        TopAbs_State state = c.State();
+        if (state == TopAbs_UNKNOWN)
+        {
+          c.Perform(p.Translated(shift), tol);
+          state = c.State();
+          if (state == TopAbs_UNKNOWN)
+            ++nbUnknown;
+        }
+        return state == TopAbs_IN || state == TopAbs_ON;
+      };
+
+      std::vector<double>      hits;
+      std::vector<signed char> segmentState; // -1 not computed, 0 OUT, 1 IN, 2 undecided
       for (int k = nextK++; k < nz; k = nextK++)
       {
         for (int j = 0; j < ny; ++j)
@@ -110,28 +146,85 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
             nextK = nz;
             return;
           }
-          for (int i = 0; i < nx; ++i)
+          const double y = theGrid.Center(1, j), z = theGrid.Center(2, k);
+          int* rowOwners = &owners[theGrid.CellIndex(0, j, k)];
+          if (myMethod == EXACT)
           {
-            const gp_Pnt p(theGrid.Center(0, i), theGrid.Center(1, j), theGrid.Center(2, k));
-            for (int s : myOrder)
+            for (int i = 0; i < nx; ++i)
             {
-              if (myBoxes[s].IsOut(p))
-                continue;
-              if (!classifiers[s])
-                classifiers[s].reset(new BRepClass3d_SolidClassifier(mySolids[s]));
-              classifiers[s]->Perform(p, tol);
-              TopAbs_State state = classifiers[s]->State();
-              if (state == TopAbs_UNKNOWN)
+              const gp_Pnt p(cx[i], y, z);
+              for (int s : myOrder)
+                if (!myBoxes[s].IsOut(p) && exactInside(s, p))
+                {
+                  rowOwners[i] = s;
+                  break;
+                }
+            }
+            continue;
+          }
+
+          int nbFree = nx;
+          for (int s : myOrder)
+          {
+            if (nbFree == 0)
+              break;
+            double xMin, yMin, zMin, xMax, yMax, zMax;
+            myBoxes[s].Get(xMin, yMin, zMin, xMax, yMax, zMax);
+            if (y < yMin || y > yMax || z < zMin || z > zMax)
+              continue;
+            const int i0 = int(std::lower_bound(cx.begin(), cx.end(), xMin) - cx.begin());
+            const int i1 = int(std::upper_bound(cx.begin(), cx.end(), xMax) - cx.begin());
+            if (i0 >= i1)
+              continue;
+
+            // crossings of the row line with the solid boundary
+            const double lineMin = xMin - minStep, lineMax = xMax + minStep;
+            if (!intersectors[s])
+            {
+              intersectors[s].reset(new IntCurvesFace_ShapeIntersector());
+              intersectors[s]->Load(mySolids[s], tol);
+            }
+            IntCurvesFace_ShapeIntersector& inter = *intersectors[s];
+            inter.Perform(gp_Lin(gp_Pnt(0., y, z), gp_Dir(1., 0., 0.)), lineMin, lineMax);
+            const bool lineDone = inter.IsDone();
+            hits.clear();
+            if (lineDone)
+              for (int h = 1; h <= inter.NbPnt(); ++h)
+                hits.push_back(inter.WParameter(h));
+            std::sort(hits.begin(), hits.end());
+            // a crossing on a seam or a shared edge is found once per face
+            hits.erase(std::unique(hits.begin(), hits.end(),
+                                   [&](double a, double b) { return b - a < 1e-3 * minStep; }),
+                       hits.end());
+            segmentState.assign(hits.size() + 1, -1);
+
+            // stretches between crossings are entirely IN or OUT: classify their midpoint
+            auto segmentInside = [&](std::size_t q, const gp_Pnt& p) -> bool
+            {
+              if (segmentState[q] < 0)
               {
-                classifiers[s]->Perform(p.Translated(shift), tol);
-                state = classifiers[s]->State();
-                if (state == TopAbs_UNKNOWN)
-                  ++nbUnknown;
+                const double a = q == 0 ? lineMin : hits[q - 1];
+                const double b = q == hits.size() ? lineMax : hits[q];
+                BRepClass3d_SolidClassifier& c = classifier(s);
+                c.Perform(gp_Pnt(0.5 * (a + b), y, z), tol);
+                segmentState[q] = c.State() == TopAbs_IN ? 1 : c.State() == TopAbs_OUT ? 0 : 2;
               }
-              if (state == TopAbs_IN || state == TopAbs_ON)
+              return segmentState[q] == 2 ? exactInside(s, p) : segmentState[q] == 1;
+            };
+
+            for (int i = i0; i < i1; ++i)
+            {
+              if (rowOwners[i] >= 0)
+                continue; // owned by a smaller solid
+              const gp_Pnt p(cx[i], y, z);
+              const std::size_t q = std::upper_bound(hits.begin(), hits.end(), cx[i]) - hits.begin();
+              const bool nearCrossing = (q > 0 && cx[i] - hits[q - 1] < dx[i]) ||
+                                        (q < hits.size() && hits[q] - cx[i] < dx[i]);
+              const bool inside = !lineDone || nearCrossing ? exactInside(s, p) : segmentInside(q, p);
+              if (inside)
               {
-                owners[theGrid.CellIndex(i, j, k)] = s;
-                break;
+                rowOwners[i] = s;
+                --nbFree;
               }
             }
           }

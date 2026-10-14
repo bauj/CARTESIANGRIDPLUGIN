@@ -34,7 +34,7 @@ public:
 
   void SetEventListener(SMESH_subMesh* subMesh) override;
 
-  //! Classification of the cells up to 0.8, then creation of nodes and hexahedra
+  //! Classification of the cells up to 0.2, then creation of nodes and hexahedra
   double GetProgress() const override;
 
 private:

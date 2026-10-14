@@ -25,8 +25,8 @@
 
 namespace
 {
-  //! part of the compute time spent classifying cells (measured: 85% on a sphere)
-  const double theClassifyShare = 0.8;
+  //! part of the compute time spent classifying cells (measured: 17% on a sphere, 150^3 cells)
+  const double theClassifyShare = 0.2;
 
   const char* shapeTypeName(TopAbs_ShapeEnum type)
   {

@@ -23,6 +23,13 @@ class VOXELPLUGIN_EXPORT VoxelPlugin_Classifier
 public:
   enum Status { OK, NO_SOLID, OPEN_SOLID };
 
+  //! SCANLINE: one line intersection per row of cells and per solid, exact classification of
+  //! the cells near a crossing and of one point per stretch between crossings.
+  //! EXACT: exact classification of every cell center (reference, O(n^3)).
+  enum Method { SCANLINE, EXACT };
+  void   SetMethod(Method theMethod) { myMethod = theMethod; }
+  Method GetMethod() const { return myMethod; }
+
   //! Collect the solids of theShape (located sub-shapes, TopExp::MapShapes order) and check them
   Status Init(const TopoDS_Shape& theShape);
 
@@ -53,6 +60,7 @@ private:
   std::vector<Bnd_Box>      myBoxes;   //!< per solid, enlarged by shape tolerance
   std::vector<int>          myOrder;   //!< solid indices by increasing volume
   int                       myBadSolid = -1;
+  Method                    myMethod = SCANLINE;
 };
 
 #endif

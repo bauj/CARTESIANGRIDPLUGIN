@@ -6,16 +6,24 @@
 #include "VoxelPlugin_Classifier.hxx"
 #include "VoxelPlugin_Grid.hxx"
 
+#include <BRepAlgoAPI_Cut.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakeCone.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
 #include <BRep_Builder.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Compound.hxx>
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Solid.hxx>
+#include <gp_Ax1.hxx>
+#include <gp_Ax2.hxx>
+#include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
 
@@ -217,6 +225,56 @@ static void cancelAndProgress()
   CHECK(std::count(owners.begin(), owners.end(), -1) == (long)owners.size());
 }
 
+static TopoDS_Shape rotated(const TopoDS_Shape& shape, const gp_Ax1& axis, double angle)
+{
+  gp_Trsf t;
+  t.SetRotation(axis, angle);
+  return BRepBuilderAPI_Transform(shape, t, /*copy=*/true).Shape();
+}
+
+static void scanlineMatchesExact()
+{
+  const gp_Ax2 ax(gp_Pnt(0, 0, -10), gp_Dir(0, 0, 1));
+  const gp_Ax1 skew(gp_Pnt(0, 0, 0), gp_Dir(1, 1, 1));
+  const TopoDS_Shape sphere = BRepPrimAPI_MakeSphere(gp_Pnt(0, 0, 0), 10.).Shape();
+  const std::vector<std::pair<const char*, TopoDS_Shape>> shapes = {
+    { "sphere", sphere },
+    { "torus", BRepPrimAPI_MakeTorus(gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 1)), 10., 3.).Shape() },
+    { "skew cylinder", rotated(BRepPrimAPI_MakeCylinder(ax, 5., 20.).Shape(), skew, 0.7) },
+    { "cone apex", BRepPrimAPI_MakeCone(ax, 6., 0., 20.).Shape() },
+    { "box with hole", BRepAlgoAPI_Cut(box(-10, -10, -10, 10, 10, 10),
+                                       BRepPrimAPI_MakeCylinder(ax, 4., 20.).Shape()).Shape() },
+    { "rotated box", rotated(box(-6, -6, -6, 6, 6, 6), skew, 0.5) },
+    { "nested and overlapping", compound({ sphere, box(-3, -3, -3, 3, 3, 3),
+                                           BRepPrimAPI_MakeSphere(gp_Pnt(8, 0, 0), 5.).Shape() }) },
+    { "touching boxes", compound({ box(-10, -10, -10, 0, 10, 10), box(0, -10, -10, 10, 10, 10) }) },
+  };
+  const int sizes[][3] = { { 20, 20, 20 }, { 17, 19, 23 }, { 31, 8, 13 } };
+  for (const auto& named : shapes)
+  {
+    VoxelPlugin_Classifier c;
+    CHECK(c.Init(named.second) == VoxelPlugin_Classifier::OK);
+    double mn[3], mx[3];
+    CHECK(VoxelPlugin_Classifier::BoundingBox(named.second, mn, mx));
+    for (int a = 0; a < 3; ++a) { mn[a] -= 1.; mx[a] += 1.; }
+    for (const int* n : sizes)
+    {
+      const VoxelPlugin_Grid g = uniformGrid(mn, mx, n[0], n[1], n[2]);
+      c.SetMethod(VoxelPlugin_Classifier::EXACT);
+      const std::vector<int> exact = c.Classify(g);
+      c.SetMethod(VoxelPlugin_Classifier::SCANLINE);
+      const std::vector<int> scan = c.Classify(g);
+      std::size_t nbDiff = 0;
+      for (std::size_t i = 0; i < exact.size(); ++i)
+        nbDiff += exact[i] != scan[i];
+      if (nbDiff)
+        std::cerr << named.first << " " << n[0] << "x" << n[1] << "x" << n[2] << ": "
+                  << nbDiff << " cells differ\n";
+      CHECK(nbDiff == 0);
+    }
+  }
+}
+
 int main()
 {
   gridHelpers();
@@ -230,6 +288,7 @@ int main()
   openSolid();
   threadsAgree();
   cancelAndProgress();
+  scanlineMatchesExact();
   boxIgnoresNonSolids();
   std::cout << (nbFailures ? "FAILED: " : "OK ") << nbFailures << " failure(s)\n";
   return nbFailures ? 1 : 0;
