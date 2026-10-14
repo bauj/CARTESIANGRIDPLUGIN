@@ -27,6 +27,16 @@ def VoxelAlgorithm(mesh):
             return h._narrow(VoxelPlugin.VoxelPlugin_Voxel_3D)
     raise ValueError("The mesh has no %s algorithm" % VOXEL_3D)
 
+def _shapeEngine(shape):
+    """Engine of the study component owning shape (GEOM or SHAPERSTUDY); GetGen() of a
+    SHAPERSTUDY shape does not return the SHAPERSTUDY engine"""
+    import salome
+    so = salome.ObjectToSObject(shape)
+    if so is None:
+        raise ValueError("The shape of the mesh is not published in the study")
+    component = so.GetFatherComponent().ComponentDataType()
+    return salome.lcc.FindOrLoadComponent("FactoryServer", component)
+
 def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file
     fileName as a Cartesian mesh, one cell group per zone; return the summary text.
@@ -41,7 +51,7 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     zones = []
     if source == "geometry":
         shape = smeshMesh.GetShapeToMesh()
-        gen = shape.GetGen()
+        gen = _shapeEngine(shape)
         groupOp = gen.GetIGroupOperations()
         for g in gen.GetIShapesOperations().GetExistingSubObjects(shape, True):
             name = g.GetName()
