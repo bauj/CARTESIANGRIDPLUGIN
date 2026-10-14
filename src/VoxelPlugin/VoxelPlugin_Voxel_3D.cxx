@@ -523,9 +523,67 @@ std::string VoxelPlugin_Voxel_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const st
   return summary.str();
 }
 
-void VoxelPlugin_Voxel_3D::zonesFromMesh(SMESH_Mesh& /*aMesh*/, const VoxelPlugin_Grid& /*grid*/,
-                                         const std::vector<VoxelPlugin_ExportZone>& /*theZones*/,
-                                         std::vector<int>& /*zoneOfCell*/)
+void VoxelPlugin_Voxel_3D::zonesFromMesh(SMESH_Mesh& aMesh, const VoxelPlugin_Grid& grid,
+                                         const std::vector<VoxelPlugin_ExportZone>& theZones,
+                                         std::vector<int>& zoneOfCell)
 {
-  throw SALOME_Exception("Export from the computed mesh is not implemented");
+  SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
+  if (meshDS->NbVolumes() == 0)
+    throw SALOME_Exception("The mesh is not computed");
+
+  // index of the grid plane at x along axis, -1 if x is not a grid plane
+  auto planeOf = [&grid](int axis, double x) -> int
+  {
+    const std::vector<double>& c = grid.coords[axis];
+    const double tol = 1e-9 * (c.back() - c.front());
+    const auto it = std::lower_bound(c.begin(), c.end(), x - tol);
+    if (it == c.end() || std::abs(*it - x) > tol)
+      return -1;
+    return (int)(it - c.begin());
+  };
+
+  for (std::size_t z = 0; z < theZones.size(); ++z)
+  {
+    const SMESHDS_GroupBase* groupDS = nullptr;
+    for (auto git = aMesh.GetGroups(); git->more(); )
+    {
+      SMESH_Group* g = git->next();
+      if (g->GetGroupDS()->GetType() == SMDSAbs_Volume && theZones[z].name == g->GetName())
+        groupDS = g->GetGroupDS();
+    }
+    if (!groupDS)
+      throw SALOME_Exception(("No volume group " + theZones[z].name + " in the mesh").c_str());
+    for (SMDS_ElemIteratorPtr eit = groupDS->GetElements(); eit->more(); )
+    {
+      const SMDS_MeshElement* e = eit->next();
+      double lo[3] = { HUGE_VAL, HUGE_VAL, HUGE_VAL }, hi[3] = { -HUGE_VAL, -HUGE_VAL, -HUGE_VAL };
+      for (SMDS_NodeIteratorPtr nit = e->nodeIterator(); nit->more(); )
+      {
+        const SMDS_MeshNode* n = nit->next();
+        const double p[3] = { n->X(), n->Y(), n->Z() };
+        for (int a = 0; a < 3; ++a)
+        {
+          lo[a] = std::min(lo[a], p[a]);
+          hi[a] = std::max(hi[a], p[a]);
+        }
+      }
+      int ijk[3];
+      bool ok = e->GetEntityType() == SMDSEntity_Hexa;
+      for (int a = 0; a < 3 && ok; ++a)
+      {
+        ijk[a] = planeOf(a, lo[a]);
+        ok = ijk[a] >= 0 && planeOf(a, hi[a]) == ijk[a] + 1;
+      }
+      if (!ok)
+        throw SALOME_Exception((SMESH_Comment("Element ") << e->GetID() << " of group " << theZones[z].name
+                                << " is not a cell of the grid: the mesh does not match its hypothesis,"
+                                   " compute it again").c_str());
+      int& zc = zoneOfCell[grid.CellIndex(ijk[0], ijk[1], ijk[2])];
+      if (zc && zc != (int)z + 1)
+        throw SALOME_Exception((SMESH_Comment("Cell (") << ijk[0] << ", " << ijk[1] << ", " << ijk[2]
+                                << ") is in zone groups " << theZones[zc - 1].name << " and "
+                                << theZones[z].name).c_str());
+      zc = (int)z + 1;
+    }
+  }
 }

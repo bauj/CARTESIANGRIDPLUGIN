@@ -144,4 +144,35 @@ assert "canceled" in result.get("error", ""), result
 assert not os.path.exists(f3)
 algo3.Grid(nbCells=10)
 assert "1000 cells" in algo3.ExportCartesianMED(f3)
+# ---- mesh source: zones of the mesh volume groups, same families as the geometry source
+fMesh = os.path.join(tmp, "mesh.med")
+summary = algo.ExportCartesianMED(fMesh, source="mesh")    # groups on geometry created above
+assert "MAT_IRON: 504 cells" in summary, summary
+mm = read(fMesh)
+assert groupCounts(mm) == expected, groupCounts(mm)
+assert mm.getFamilyFieldAtLevel(0).isEqual(read(fGeom).getFamilyFieldAtLevel(0))
+
+# a cell in two zone groups
+extra = mesh.MakeGroupByIds("MAT_EXTRA", SMESH.VOLUME, mesh.GetElementsByType(SMESH.VOLUME)[:3])
+text = raises(SALOME.SALOME_Exception, algo.ExportCartesianMED, os.path.join(tmp, "y.med"),
+              source="mesh")
+assert "Cell (" in text and "MAT_EXTRA" in text, text
+mesh.RemoveGroup(extra)
+
+# not computed
+mesh4 = smesh.Mesh(world, "NotComputed")
+a4 = mesh4.Voxel()
+a4.Grid(nbCells=5)
+mesh4.CreateEmptyGroup(SMESH.VOLUME, "MAT_E")
+text = raises(SALOME.SALOME_Exception, a4.ExportCartesianMED, os.path.join(tmp, "y.med"), source="mesh")
+assert "not computed" in text, text
+
+# hypothesis changed after compute: SMESH clears the mesh
+assert mesh2.Compute(), mesh2.GetComputeErrors()
+mesh2.GroupOnGeom(geompy.GetExistingSubObjects(world, True)[0], "MAT_G", SMESH.VOLUME)
+algo2.Grid(nbCells=3)
+text = raises(SALOME.SALOME_Exception, algo2.ExportCartesianMED, os.path.join(tmp, "y.med"),
+              source="mesh")
+assert "not computed" in text, text
+assert not os.path.exists(os.path.join(tmp, "y.med"))
 print("OK")
