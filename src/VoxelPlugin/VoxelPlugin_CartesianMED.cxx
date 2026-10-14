@@ -9,6 +9,7 @@
 #include <MEDFileMesh.hxx>
 
 #include <algorithm>
+#include <cstdio>
 #include <set>
 #include <stdexcept>
 
@@ -16,7 +17,7 @@ using namespace MEDCoupling;
 
 namespace
 {
-  const std::size_t theMaxFamilyName = 64; // MED_NAME_SIZE
+  const std::size_t theMaxName = 64; // MED_NAME_SIZE: mesh and family names
 }
 
 void VoxelPlugin_CartesianMED::Write(const std::string& theFile, const std::string& theMeshName,
@@ -40,15 +41,17 @@ void VoxelPlugin_CartesianMED::Write(const std::string& theFile, const std::stri
   std::set<std::string> names;
   for (const std::string& name : theZoneNames)
   {
-    if (name.empty() || 4 + name.size() > theMaxFamilyName)
+    if (name.empty() || 4 + name.size() > theMaxName)
       throw std::invalid_argument("Zone group name empty or longer than 60 characters: " + name);
     if (!names.insert(name).second)
       throw std::invalid_argument("Duplicate zone group name: " + name);
   }
 
+  // written to a temporary file renamed at the end: a failure leaves an existing file untouched
+  const std::string tmpFile = theFile + ".tmp";
   try
   {
-    MCAuto<MEDCouplingCMesh> cmesh = MEDCouplingCMesh::New(theMeshName);
+    MCAuto<MEDCouplingCMesh> cmesh = MEDCouplingCMesh::New(theMeshName.substr(0, theMaxName));
     MCAuto<DataArrayDouble> x[3];
     for (int a = 0; a < 3; ++a)
     {
@@ -73,10 +76,16 @@ void VoxelPlugin_CartesianMED::Write(const std::string& theFile, const std::stri
       fmesh->addFamily(family, -(z + 1));
       fmesh->setGroupsOnFamily(family, { theZoneNames[z] });
     }
-    fmesh->write33(theFile, 2);
+    fmesh->write33(tmpFile, 2);
   }
   catch (const INTERP_KERNEL::Exception& ex)
   {
+    std::remove(tmpFile.c_str());
     throw std::runtime_error(std::string("MED export failed: ") + ex.what());
+  }
+  if (std::rename(tmpFile.c_str(), theFile.c_str()) != 0)
+  {
+    std::remove(tmpFile.c_str());
+    throw std::runtime_error("MED export failed: cannot write " + theFile);
   }
 }

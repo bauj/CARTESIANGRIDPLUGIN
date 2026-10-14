@@ -56,6 +56,13 @@ int main()
     CHECK(b->getNumberOfTuples() == 2 && b->getIJ(0, 0) == 1 && b->getIJ(1, 0) == 5);
   }
 
+  // mesh name longer than MED allows (64 characters): truncated, file written
+  VoxelPlugin_CartesianMED::Write(file, std::string(70, 'm'), c, zone, { "MAT_A", "MAT_B" });
+  {
+    MCAuto<MEDFileMesh> lm = MEDFileMesh::New(file);
+    CHECK(lm->getName() == std::string(64, 'm'));
+  }
+
   // bad input: nothing written, std::invalid_argument
   auto refused = [&](const std::vector<int>& z, const std::vector<std::string>& names)
   {

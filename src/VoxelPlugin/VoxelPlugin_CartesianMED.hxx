@@ -16,8 +16,8 @@ namespace VoxelPlugin_CartesianMED
   //! Writes (overwrites) theFile: Cartesian mesh theMeshName with node coordinates theCoords
   //! (components X, Y, Z); cell c (VoxelPlugin_Grid::CellIndex order, i fastest) gets family
   //! -theZoneOfCell[c], family -z being "FAM_<name>" holding the group theZoneNames[z-1]; 0 = no
-  //! zone. Throws std::invalid_argument on bad input (nothing written), std::runtime_error when
-  //! MEDLoader fails.
+  //! zone. theMeshName is cut to the 64 characters MED allows. Throws std::invalid_argument on
+  //! bad input, std::runtime_error when writing fails; an existing theFile is then left untouched.
   VOXELPLUGIN_EXPORT void Write(const std::string& theFile, const std::string& theMeshName,
                                 const std::vector<double> theCoords[3],
                                 const std::vector<int>& theZoneOfCell,
