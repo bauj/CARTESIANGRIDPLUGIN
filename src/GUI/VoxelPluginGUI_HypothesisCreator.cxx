@@ -194,13 +194,13 @@ void VoxelPluginGUI_HypothesisCreator::retrieveParams() const
     const int mode = h->GetMode(a);
     myNbCells[a]->setValue(h->GetNbCells(a));
     myStep[a]->SetValue(h->GetStep(a));
-    SMESH::double_array_var coords = h->GetCoordinates(a);
+    VoxelPlugin::DoubleArray_var coords = h->GetCoordinates(a);
     std::vector<double> c(coords->length());
     for (CORBA::ULong i = 0; i < coords->length(); ++i)
       c[i] = coords[i];
     myCoords[a]->setText(QString::fromStdString(VoxelPlugin_GridText::FormatCoordinates(c)));
-    SMESH::string_array_var funs;
-    SMESH::double_array_var points;
+    VoxelPlugin::StringArray_var funs;
+    VoxelPlugin::DoubleArray_var points;
     h->GetSpacing(a, funs.out(), points.out());
     std::vector<std::string> f;
     for (CORBA::ULong i = 0; i < funs->length(); ++i)
@@ -231,7 +231,7 @@ QString VoxelPluginGUI_HypothesisCreator::storeParams() const
     {
       std::vector<double> c;
       VoxelPlugin_GridText::ParseCoordinates(myCoords[a]->text().toStdString(), c, error); // checked
-      SMESH::double_array_var coords = new SMESH::double_array;
+      VoxelPlugin::DoubleArray_var coords = new VoxelPlugin::DoubleArray;
       coords->length((CORBA::ULong)c.size());
       for (std::size_t i = 0; i < c.size(); ++i)
         coords[(CORBA::ULong)i] = c[i];
@@ -243,11 +243,11 @@ QString VoxelPluginGUI_HypothesisCreator::storeParams() const
       std::vector<std::string> f;
       std::vector<double> p;
       VoxelPlugin_GridText::ParseSpacing(mySpacing[a]->text().toStdString(), f, p, error); // checked
-      SMESH::string_array_var funs = new SMESH::string_array;
+      VoxelPlugin::StringArray_var funs = new VoxelPlugin::StringArray;
       funs->length((CORBA::ULong)f.size());
       for (std::size_t i = 0; i < f.size(); ++i)
         funs[(CORBA::ULong)i] = CORBA::string_dup(f[i].c_str());
-      SMESH::double_array_var points = new SMESH::double_array;
+      VoxelPlugin::DoubleArray_var points = new VoxelPlugin::DoubleArray;
       points->length((CORBA::ULong)p.size());
       for (std::size_t i = 0; i < p.size(); ++i)
         points[(CORBA::ULong)i] = p[i];

@@ -3,7 +3,6 @@ INCLUDE(UseOmniORB)  # Provided by KERNEL
 INCLUDE_DIRECTORIES(
   ${OMNIORB_INCLUDE_DIR}
   ${KERNEL_INCLUDE_DIRS}
-  ${GEOM_INCLUDE_DIRS}
   ${SMESH_INCLUDE_DIRS}
   ${PROJECT_BINARY_DIR}/idl
 )
@@ -14,13 +13,11 @@ SET(SalomeIDLVOXELPLUGIN_IDLSOURCES
 
 SET(_idl_include_dirs
   ${KERNEL_ROOT_DIR}/idl/salome
-  ${GEOM_ROOT_DIR}/idl/salome
   ${SMESH_ROOT_DIR}/idl/salome
 )
 
 SET(_idl_link_flags
   ${KERNEL_SalomeIDLKernel}
-  ${GEOM_SalomeIDLGEOM}
   ${SMESH_SalomeIDLSMESH}
 )
 

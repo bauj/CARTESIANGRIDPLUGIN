@@ -5,13 +5,15 @@
 
 #include "SALOME_Exception.idl"
 #include "SMESH_Hypothesis.idl"
-#include "SMESH_Mesh.idl"
 
 /*!
  * VoxelPlugin: Cartesian staircase voxel meshing
  */
 module VoxelPlugin
 {
+  typedef sequence<double> DoubleArray;
+  typedef sequence<string> StringArray;
+
   /*!
    * Voxel 3D algorithm: one hexahedron per grid cell owned by a solid
    */
@@ -33,14 +35,14 @@ module VoxelPlugin
     long   GetNbCells(in short axis) raises (SALOME::SALOME_Exception);
     double GetStep(in short axis) raises (SALOME::SALOME_Exception);
     //! absolute node coordinates (mode Coordinates): >= 2 distinct values, sorted on input
-    void SetCoordinates(in short axis, in SMESH::double_array coords) raises (SALOME::SALOME_Exception);
-    SMESH::double_array GetCoordinates(in short axis) raises (SALOME::SALOME_Exception);
+    void SetCoordinates(in short axis, in DoubleArray coords) raises (SALOME::SALOME_Exception);
+    DoubleArray GetCoordinates(in short axis) raises (SALOME::SALOME_Exception);
     //! spacing functions f(t), t in [0,1] over the bounding box, and internal points in ]0,1[
     //! splitting it, one less than functions (mode Spacing, as Body Fitting SetGridSpacing)
-    void SetSpacing(in short axis, in SMESH::string_array functions,
-                    in SMESH::double_array internalPoints) raises (SALOME::SALOME_Exception);
-    void GetSpacing(in short axis, out SMESH::string_array functions,
-                    out SMESH::double_array internalPoints) raises (SALOME::SALOME_Exception);
+    void SetSpacing(in short axis, in StringArray functions,
+                    in DoubleArray internalPoints) raises (SALOME::SALOME_Exception);
+    void GetSpacing(in short axis, out StringArray functions,
+                    out DoubleArray internalPoints) raises (SALOME::SALOME_Exception);
 
     //! keep cells outside all solids (bound to the main shape) instead of removing them
     void    SetKeepOutsideCells(in boolean keep);

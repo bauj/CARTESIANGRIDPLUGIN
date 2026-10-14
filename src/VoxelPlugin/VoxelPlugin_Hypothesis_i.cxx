@@ -80,7 +80,7 @@ CORBA::Double VoxelPlugin_Hypothesis_i::GetStep(CORBA::Short axis)
   return 0.;
 }
 
-void VoxelPlugin_Hypothesis_i::SetCoordinates(CORBA::Short axis, const SMESH::double_array& coords)
+void VoxelPlugin_Hypothesis_i::SetCoordinates(CORBA::Short axis, const VoxelPlugin::DoubleArray& coords)
 {
   std::vector<double> c(coords.length());
   for (CORBA::ULong i = 0; i < coords.length(); ++i)
@@ -91,12 +91,16 @@ void VoxelPlugin_Hypothesis_i::SetCoordinates(CORBA::Short axis, const SMESH::do
   catch (SALOME_Exception& ex) {
     THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::BAD_PARAM);
   }
-  SMESH::TPythonDump() << _this() << ".SetCoordinates( " << axis << ", " << coords << " )";
+  SMESH::TPythonDump dump;
+  dump << _this() << ".SetCoordinates( " << axis << ", [ ";
+  for (CORBA::ULong i = 0; i < coords.length(); ++i)
+    dump << (i ? ", " : "") << coords[i];
+  dump << " ] )";
 }
 
-SMESH::double_array* VoxelPlugin_Hypothesis_i::GetCoordinates(CORBA::Short axis)
+VoxelPlugin::DoubleArray* VoxelPlugin_Hypothesis_i::GetCoordinates(CORBA::Short axis)
 {
-  SMESH::double_array_var coords = new SMESH::double_array;
+  VoxelPlugin::DoubleArray_var coords = new VoxelPlugin::DoubleArray;
   try {
     const std::vector<double>& c = GetImpl()->GetCoordinates(axis);
     coords->length((CORBA::ULong)c.size());
@@ -109,8 +113,8 @@ SMESH::double_array* VoxelPlugin_Hypothesis_i::GetCoordinates(CORBA::Short axis)
   return coords._retn();
 }
 
-void VoxelPlugin_Hypothesis_i::SetSpacing(CORBA::Short axis, const SMESH::string_array& functions,
-                                          const SMESH::double_array& internalPoints)
+void VoxelPlugin_Hypothesis_i::SetSpacing(CORBA::Short axis, const VoxelPlugin::StringArray& functions,
+                                          const VoxelPlugin::DoubleArray& internalPoints)
 {
   std::vector<std::string> f;
   for (CORBA::ULong i = 0; i < functions.length(); ++i)
@@ -124,15 +128,21 @@ void VoxelPlugin_Hypothesis_i::SetSpacing(CORBA::Short axis, const SMESH::string
   catch (SALOME_Exception& ex) {
     THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::BAD_PARAM);
   }
-  SMESH::TPythonDump() << _this() << ".SetSpacing( " << axis << ", " << functions << ", "
-                       << internalPoints << " )";
+  SMESH::TPythonDump dump;
+  dump << _this() << ".SetSpacing( " << axis << ", [ ";
+  for (CORBA::ULong i = 0; i < functions.length(); ++i)
+    dump << (i ? ", " : "") << "'" << functions[i].in() << "'";
+  dump << " ], [ ";
+  for (CORBA::ULong i = 0; i < internalPoints.length(); ++i)
+    dump << (i ? ", " : "") << internalPoints[i];
+  dump << " ] )";
 }
 
-void VoxelPlugin_Hypothesis_i::GetSpacing(CORBA::Short axis, SMESH::string_array_out functions,
-                                          SMESH::double_array_out internalPoints)
+void VoxelPlugin_Hypothesis_i::GetSpacing(CORBA::Short axis, VoxelPlugin::StringArray_out functions,
+                                          VoxelPlugin::DoubleArray_out internalPoints)
 {
-  SMESH::string_array_var f = new SMESH::string_array;
-  SMESH::double_array_var p = new SMESH::double_array;
+  VoxelPlugin::StringArray_var f = new VoxelPlugin::StringArray;
+  VoxelPlugin::DoubleArray_var p = new VoxelPlugin::DoubleArray;
   try {
     const std::vector<std::string>& funs = GetImpl()->GetSpacingFunctions(axis);
     const std::vector<double>& points = GetImpl()->GetSpacingPoints(axis);

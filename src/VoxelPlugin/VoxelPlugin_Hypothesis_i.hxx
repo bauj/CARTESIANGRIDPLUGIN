@@ -27,12 +27,12 @@ public:
   CORBA::Long   GetNbCells(CORBA::Short axis);
   CORBA::Double GetStep(CORBA::Short axis);
 
-  void                 SetCoordinates(CORBA::Short axis, const SMESH::double_array& coords);
-  SMESH::double_array* GetCoordinates(CORBA::Short axis);
-  void                 SetSpacing(CORBA::Short axis, const SMESH::string_array& functions,
-                                  const SMESH::double_array& internalPoints);
-  void                 GetSpacing(CORBA::Short axis, SMESH::string_array_out functions,
-                                  SMESH::double_array_out internalPoints);
+  void                      SetCoordinates(CORBA::Short axis, const VoxelPlugin::DoubleArray& coords);
+  VoxelPlugin::DoubleArray* GetCoordinates(CORBA::Short axis);
+  void                      SetSpacing(CORBA::Short axis, const VoxelPlugin::StringArray& functions,
+                                       const VoxelPlugin::DoubleArray& internalPoints);
+  void                      GetSpacing(CORBA::Short axis, VoxelPlugin::StringArray_out functions,
+                                       VoxelPlugin::DoubleArray_out internalPoints);
 
   void           SetKeepOutsideCells(CORBA::Boolean keep);
   CORBA::Boolean GetKeepOutsideCells();
