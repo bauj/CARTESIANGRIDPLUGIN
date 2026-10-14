@@ -41,6 +41,8 @@ In the GUI: *Create Mesh*, 3D algorithm *Voxel 3D*, hypothesis *Voxel Grid*.
 - Every solid must be closed. A solid smaller than a cell may own no cell (warning).
 - About 760 bytes per hexahedron; 10^6 cells compute in about 6.5 s on 12 threads.
   `mesh.Evaluate()` gives the exact node and hexahedron counts before computing.
+- Cells are classified in parallel on all cores, then nodes and hexahedra are created on one
+  thread. The compute reports its progress and can be canceled (no partial mesh left).
 - A grid of more than 10^8 cells is refused with a compute error.
 - A cell center the geometry kernel cannot locate in a solid is taken as outside it (warning).
 
