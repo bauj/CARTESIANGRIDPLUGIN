@@ -10,12 +10,51 @@ from salome.smesh.smesh_algorithm import Mesh_Algorithm
 noVoxelPlugin = 0
 try:
     import VoxelPlugin
+    import SMESH
 except ImportError:
     noVoxelPlugin = 1
 
 VOXEL_3D = "Voxel_3D"
 
 X, Y, Z = 0, 1, 2
+
+def VoxelAlgorithm(mesh):
+    """The VoxelPlugin_Voxel_3D algorithm object assigned to the main shape of mesh
+    (smeshBuilder.Mesh or SMESH.SMESH_Mesh); ValueError if there is none"""
+    smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
+    for h in smeshMesh.GetHypothesisList(smeshMesh.GetShapeToMesh()):
+        if h.GetName() == VOXEL_3D:
+            return h._narrow(VoxelPlugin.VoxelPlugin_Voxel_3D)
+    raise ValueError("The mesh has no %s algorithm" % VOXEL_3D)
+
+def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
+    """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file
+    fileName as a Cartesian mesh, one cell group per zone; return the summary text.
+    source "geometry": zones are the geometry groups of the main shape whose name starts with
+    zonePrefix, each cell takes the zone of the solid containing its center, no mesh element is
+    needed. source "mesh": zones are the volume groups of the computed mesh whose name starts
+    with zonePrefix. A solid (geometry) or a cell (mesh) in two zone groups is an error."""
+    if source not in ("geometry", "mesh"):
+        raise ValueError('source: "geometry" or "mesh", got %r' % (source,))
+    smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
+    algo = VoxelAlgorithm(smeshMesh)
+    zones = []
+    if source == "geometry":
+        shape = smeshMesh.GetShapeToMesh()
+        gen = shape.GetGen()
+        groupOp = gen.GetIGroupOperations()
+        for g in gen.GetIShapesOperations().GetExistingSubObjects(shape, True):
+            name = g.GetName()
+            if name.startswith(zonePrefix):
+                zones.append(VoxelPlugin.ExportZone(name, list(groupOp.GetObjects(g))))
+    else:
+        for g in smeshMesh.GetGroups():
+            if g.GetType() == SMESH.VOLUME and g.GetName().startswith(zonePrefix):
+                zones.append(VoxelPlugin.ExportZone(g.GetName(), []))
+    if not zones:
+        raise ValueError("No %s group named %s*" % ("geometry" if source == "geometry" else "mesh volume",
+                                                     zonePrefix))
+    return algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
 
 class Voxel_3D_Algorithm(Mesh_Algorithm):
     """Cartesian staircase voxels, one hexahedron per cell owned by a solid.
@@ -83,3 +122,7 @@ class Voxel_3D_Algorithm(Mesh_Algorithm):
         if keepOutsideCells is not None:
             self.params.SetKeepOutsideCells(keepOutsideCells)
         return self.params
+
+    def ExportCartesianMED(self, fileName, source="geometry", zonePrefix="MAT_"):
+        """See VoxelPluginBuilder.ExportCartesianMED"""
+        return ExportCartesianMED(self.mesh, fileName, source, zonePrefix)

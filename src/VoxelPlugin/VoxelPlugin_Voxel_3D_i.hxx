@@ -20,6 +20,11 @@ public:
   virtual ~VoxelPlugin_Voxel_3D_i();
 
   ::VoxelPlugin_Voxel_3D* GetImpl();
+
+  char* ExportCartesianMED(SMESH::SMESH_Mesh_ptr mesh, const char* file, CORBA::Boolean fromMesh,
+                           const VoxelPlugin::ExportZones& zones);
+  CORBA::Double GetExportProgress();
+  void CancelExport();
 };
 
 #endif

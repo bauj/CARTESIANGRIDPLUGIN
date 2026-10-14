@@ -2,13 +2,16 @@
 // LGPL 2.1 or later
 #include "VoxelPlugin_Voxel_3D.hxx"
 
+#include "VoxelPlugin_CartesianMED.hxx"
 #include "VoxelPlugin_Classifier.hxx"
 #include "VoxelPlugin_Hypothesis.hxx"
 
 #include <SMDS_MeshNode.hxx>
+#include <SMESHDS_GroupBase.hxx>
 #include <SMESHDS_Mesh.hxx>
 #include <SMESHDS_SubMesh.hxx>
 #include <SMESH_Comment.hxx>
+#include <SMESH_Group.hxx>
 #include <SMESH_ComputeError.hxx>
 #include <SMESH_Mesh.hxx>
 #include <SMESH_MesherHelper.hxx>
@@ -20,7 +23,11 @@
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
+#include <Utils_SALOME_Exception.hxx>
 
+#include <algorithm>
+#include <cmath>
+#include <sstream>
 #include <vector>
 
 namespace
@@ -158,7 +165,8 @@ void VoxelPlugin_Voxel_3D::removeMeshOnShape(SMESH_Mesh& aMesh, const TopoDS_Sha
 
 bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& classifier,
                                    VoxelPlugin_Grid& grid, std::vector<int>& owners,
-                                   std::size_t* nbUnknown, bool forCompute)
+                                   std::size_t* nbUnknown, bool forCompute,
+                                   bool classify)
 {
   _coverageWarning.clear();
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
@@ -201,6 +209,8 @@ bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& cl
                  << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
   grid = _hyp->MakeGrid(minC, maxC);
   _coverageWarning = _hyp->CoverageWarning(grid, minC, maxC);
+  if (!classify)
+    return true;
   if (forCompute)
   {
     _nbDoneSlabs = 0;
@@ -424,4 +434,98 @@ double VoxelPlugin_Voxel_3D::GetProgress() const
 void VoxelPlugin_Voxel_3D::SetEventListener(SMESH_subMesh* subMesh)
 {
   _EventListener::SetOn(subMesh, GetName());
+}
+
+double VoxelPlugin_Voxel_3D::ExportProgress() const
+{
+  return _nbSlabs > 0 ? std::min(1., (double)_nbDoneSlabs / _nbSlabs) : 0.;
+}
+
+std::string VoxelPlugin_Voxel_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const std::string& file,
+                                                     const std::string& meshName, bool fromMesh,
+                                                     std::vector<VoxelPlugin_ExportZone> zones)
+{
+  if (zones.empty())
+    throw SALOME_Exception("No zone group");
+  std::sort(zones.begin(), zones.end(),
+            [](const VoxelPlugin_ExportZone& a, const VoxelPlugin_ExportZone& b) { return a.name < b.name; });
+  const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
+  Hypothesis_Status status;
+  if (!CheckHypothesis(aMesh, mainShape, status) || !_hyp)
+    throw SALOME_Exception("The mesh has no Voxel Grid hypothesis");
+
+  InitComputeError();             // also resets _computeCanceled
+  _nbDoneSlabs = 0;
+  _nbSlabs = 0;
+  VoxelPlugin_Classifier classifier;
+  VoxelPlugin_Grid grid;
+  std::vector<int> owners;
+  if (!prepare(aMesh, classifier, grid, owners, nullptr, /*forCompute=*/!fromMesh, /*classify=*/!fromMesh))
+    throw SALOME_Exception(_comment.c_str());
+  if (_computeCanceled)
+    throw SALOME_Exception("Export canceled");
+
+  SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
+  std::vector<int> zoneOfCell(grid.NbCells(), 0);
+  std::vector<int> solidsWithoutZone;
+  if (!fromMesh)
+  {
+    std::vector<int> zoneOfSolid(classifier.NbSolids(), 0);
+    for (int s = 0; s < classifier.NbSolids(); ++s)
+    {
+      const int id = meshDS->ShapeToIndex(classifier.Solid(s));
+      for (std::size_t z = 0; z < zones.size(); ++z)
+        if (std::find(zones[z].ids.begin(), zones[z].ids.end(), id) != zones[z].ids.end())
+        {
+          if (zoneOfSolid[s])
+            throw SALOME_Exception((SMESH_Comment("Solid #") << id << " is in zone groups "
+                                    << zones[zoneOfSolid[s] - 1].name << " and " << zones[z].name).c_str());
+          zoneOfSolid[s] = (int)z + 1;
+        }
+      if (!zoneOfSolid[s])
+        solidsWithoutZone.push_back(id);
+    }
+    for (std::size_t c = 0; c < owners.size(); ++c)
+      zoneOfCell[c] = owners[c] < 0 ? 0 : zoneOfSolid[owners[c]];
+  }
+  else
+    zonesFromMesh(aMesh, grid, zones, zoneOfCell);   // Task 3
+
+  const std::vector<double> coords[3] = { grid.coords[0], grid.coords[1], grid.coords[2] };
+  std::vector<std::string> names;
+  for (const VoxelPlugin_ExportZone& z : zones)
+    names.push_back(z.name);
+  try
+  {
+    VoxelPlugin_CartesianMED::Write(file, meshName, coords, zoneOfCell, names);
+  }
+  catch (const std::exception& ex)
+  {
+    throw SALOME_Exception(ex.what());
+  }
+
+  std::vector<std::size_t> count(zones.size() + 1, 0);
+  for (int z : zoneOfCell)
+    ++count[z];
+  std::ostringstream summary;
+  summary << "Cartesian grid " << grid.NbCells(0) << " x " << grid.NbCells(1) << " x " << grid.NbCells(2)
+          << " = " << grid.NbCells() << " cells written to " << file << "\n";
+  for (std::size_t z = 0; z < zones.size(); ++z)
+    summary << "  " << zones[z].name << ": " << count[z + 1] << " cells\n";
+  summary << "  no zone: " << count[0] << " cells\n";
+  if (!solidsWithoutZone.empty())
+  {
+    summary << "  solids in no zone group:";
+    for (std::size_t i = 0; i < solidsWithoutZone.size(); ++i)
+      summary << (i ? ", #" : " #") << solidsWithoutZone[i];
+    summary << "\n";
+  }
+  return summary.str();
+}
+
+void VoxelPlugin_Voxel_3D::zonesFromMesh(SMESH_Mesh& /*aMesh*/, const VoxelPlugin_Grid& /*grid*/,
+                                         const std::vector<VoxelPlugin_ExportZone>& /*theZones*/,
+                                         std::vector<int>& /*zoneOfCell*/)
+{
+  throw SALOME_Exception("Export from the computed mesh is not implemented");
 }

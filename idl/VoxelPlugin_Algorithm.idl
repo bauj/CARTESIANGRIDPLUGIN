@@ -5,6 +5,7 @@
 
 #include "SALOME_Exception.idl"
 #include "SMESH_Hypothesis.idl"
+#include "SMESH_Mesh.idl"
 
 /*!
  * VoxelPlugin: Cartesian staircase voxel meshing
@@ -13,12 +14,31 @@ module VoxelPlugin
 {
   typedef sequence<double> DoubleArray;
   typedef sequence<string> StringArray;
+  typedef sequence<long> LongArray;
+
+  //! zone of the Cartesian MED export: group name, and for the geometry source the sub-shape
+  //! ids of its solids in the main shape
+  struct ExportZone
+  {
+    string    name;
+    LongArray ids;
+  };
+  typedef sequence<ExportZone> ExportZones;
 
   /*!
    * Voxel 3D algorithm: one hexahedron per grid cell owned by a solid
    */
   interface VoxelPlugin_Voxel_3D : SMESH::SMESH_3D_Algo
   {
+    //! Writes the grid of the mesh hypothesis to a MED Cartesian file, one group per zone;
+    //! fromMesh false: zones of the owner solids, no element created; true: zones of the
+    //! hexahedra of the mesh volume groups named as the zones. Returns a summary.
+    string ExportCartesianMED(in SMESH::SMESH_Mesh mesh, in string file, in boolean fromMesh,
+                              in ExportZones zones) raises (SALOME::SALOME_Exception);
+    //! progress of the running export, 0..1
+    double GetExportProgress();
+    //! stops the running export
+    void   CancelExport();
   };
 
   /*!
