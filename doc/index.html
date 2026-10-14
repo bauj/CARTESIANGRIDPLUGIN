@@ -30,6 +30,9 @@ mesh.Compute()
 <ul>
 <li>The algorithm must be assigned to the main shape (all solids); no sub-meshes.</li>
 <li>Every solid must be closed. Solids smaller than a cell may own no cell (warning).</li>
-<li>Memory: about 760 bytes per hexahedron (nodes included) in the SMESH process; a 100x100x100 box (10<sup>6</sup> cells) computes in about 6.5 s on 12 threads.</li>
+<li>Memory: about 760 bytes per hexahedron (nodes included) in the SMESH process; a 100x100x100 box (10<sup>6</sup> cells) computes in about 6.5 s on 12 threads.
+<i>Evaluate</i> gives the exact node and hexahedron counts before computing.</li>
+<li>A grid of more than 10<sup>8</sup> cells is refused with a compute error.</li>
+<li>A cell center the geometry kernel cannot locate in a solid is taken as outside it; a warning gives their number.</li>
 </ul>
 </body></html>

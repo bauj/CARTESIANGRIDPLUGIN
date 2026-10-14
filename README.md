@@ -40,6 +40,9 @@ In the GUI: *Create Mesh*, 3D algorithm *Voxel 3D*, hypothesis *Voxel Grid*.
 - The algorithm must be assigned to the main shape; no sub-meshes.
 - Every solid must be closed. A solid smaller than a cell may own no cell (warning).
 - About 760 bytes per hexahedron; 10^6 cells compute in about 6.5 s on 12 threads.
+  `mesh.Evaluate()` gives the exact node and hexahedron counts before computing.
+- A grid of more than 10^8 cells is refused with a compute error.
+- A cell center the geometry kernel cannot locate in a solid is taken as outside it (warning).
 
 ## Layout
 
