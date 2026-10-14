@@ -9,10 +9,8 @@
 #include <vector>
 
 /*!
- * \brief Text format of the grid modes in the GUI.
- *        Coordinates: numbers separated by spaces and/or commas, "0 1 2.5 10".
- *        Spacing: functions and internal points alternating, separated by ';', "0.2 ; 0.5 ; 0.2+t".
- *        Numbers always use a decimal point, whatever the locale.
+ * \brief Numbers as text in the GUI and the Python dump: always a decimal point, whatever
+ *        the locale.
  */
 namespace VoxelPlugin_GridText
 {
@@ -43,16 +41,17 @@ namespace VoxelPlugin_GridText
     return std::string(buf, r.ptr);
   }
 
-  //! at least 2 finite numbers, order kept
-  inline bool ParseCoordinates(const std::string& theText, std::vector<double>& theCoords,
-                               std::string& theError)
+  //! finite numbers separated by spaces, tabs, new lines, commas or semicolons (a column or
+  //! row copied from a text file or a spreadsheet), order kept; false with theError on a bad one
+  inline bool ParseNumbers(const std::string& theText, std::vector<double>& theValues,
+                           std::string& theError)
   {
-    theCoords.clear();
+    theValues.clear();
     std::string field;
     const std::string text = theText + ' ';
     for (char ch : text)
     {
-      if (ch != ' ' && ch != ',' && ch != '\t')
+      if (ch != ' ' && ch != ',' && ch != ';' && ch != '\t' && ch != '\n' && ch != '\r')
       {
         field += ch;
         continue;
@@ -65,81 +64,10 @@ namespace VoxelPlugin_GridText
         theError = "Bad number: " + field;
         return false;
       }
-      theCoords.push_back(v);
+      theValues.push_back(v);
       field.clear();
     }
-    if (theCoords.size() < 2)
-    {
-      theError = "At least 2 coordinates are needed";
-      return false;
-    }
     return true;
-  }
-
-  inline std::string FormatCoordinates(const std::vector<double>& theCoords)
-  {
-    std::string text;
-    for (std::size_t i = 0; i < theCoords.size(); ++i)
-      text += (i ? " " : "") + FormatNumber(theCoords[i]);
-    return text;
-  }
-
-  //! odd number of non-empty fields: function ; point ; function ...
-  inline bool ParseSpacing(const std::string& theText, std::vector<std::string>& theFunctions,
-                           std::vector<double>& thePoints, std::string& theError)
-  {
-    theFunctions.clear();
-    thePoints.clear();
-    std::vector<std::string> fields;
-    std::size_t start = 0;
-    while (true)
-    {
-      const std::size_t sep = theText.find(';', start);
-      fields.push_back(Trim(theText.substr(start, sep == std::string::npos ? std::string::npos : sep - start)));
-      if (sep == std::string::npos)
-        break;
-      start = sep + 1;
-    }
-    for (const std::string& f : fields)
-      if (f.empty())
-      {
-        theError = "Empty field in spacing";
-        return false;
-      }
-    if (fields.size() % 2 == 0)
-    {
-      theError = "Spacing must alternate functions and internal points: f1 ; t1 ; f2";
-      return false;
-    }
-    for (std::size_t i = 0; i < fields.size(); ++i)
-    {
-      if (i % 2 == 0)
-      {
-        theFunctions.push_back(fields[i]);
-        continue;
-      }
-      double t;
-      if (!ParseNumber(fields[i], t))
-      {
-        theError = "Bad internal point: " + fields[i];
-        return false;
-      }
-      thePoints.push_back(t);
-    }
-    return true;
-  }
-
-  inline std::string FormatSpacing(const std::vector<std::string>& theFunctions,
-                                   const std::vector<double>&      thePoints)
-  {
-    std::string text;
-    for (std::size_t i = 0; i < theFunctions.size(); ++i)
-    {
-      if (i)
-        text += " ; " + (i - 1 < thePoints.size() ? FormatNumber(thePoints[i - 1]) : std::string("?")) + " ; ";
-      text += theFunctions[i];
-    }
-    return text;
   }
 }
 
