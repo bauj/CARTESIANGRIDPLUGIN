@@ -8,9 +8,18 @@ hexahedra (staircase voxels). Each cell belongs to the <b>smallest solid contain
 the deepest volume wins.</p>
 <h2>Hypothesis Voxel Grid</h2>
 <ul>
-<li>Per axis X, Y, Z: <b>Nb cells</b> n (spacing = extent / n) or <b>Step</b> s
-(n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box exactly).
-The extent is the tight bounding box of the main shape.</li>
+<li>Per axis X, Y, Z, one of:
+<ul>
+<li><b>Nb cells</b> n: spacing = extent / n;</li>
+<li><b>Step</b> s: n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box exactly;</li>
+<li><b>Coordinates</b>: absolute node coordinates (text <code>0 1 2.5 10</code>, sorted on input,
+at least 2 distinct values). The grid spans the first to the last value along that axis, whatever
+the bounding box: parts of solids beyond it are not meshed (warning);</li>
+<li><b>Spacing</b>: spacing functions f(t), t from 0 to 1 across the bounding box, as in Body Fitting
+(text <code>f1 ; t1 ; f2</code>: function f1 up to internal point t1, then f2). At most about
+1000 cells per range between internal points; add internal points for finer grids.</li>
+</ul>
+The extent is the tight bounding box of the solids. Modes can differ between axes.</li>
 <li><b>Cells outside all solids</b>: <i>Remove</i> (default) or <i>Keep</i>. Kept cells are
 bound to the main shape, which must then be a compound; a warning gives their number.</li>
 </ul>
@@ -24,6 +33,10 @@ mesh = smesh.Mesh(shape)
 algo = mesh.Voxel()
 hyp = algo.Grid(nbCells=[40, 40, 20])   # or step=2.5, keepOutsideCells=True
 hyp.SetStep(2, 5.0)                     # axis 0=X, 1=Y, 2=Z
+hyp.SetCoordinates(0, [0, 2, 5, 10])    # X node coordinates
+hyp.SetSpacing(2, ["0.5", "2"], [0.5])  # Z: 0.5 up to the middle, then 2
+# same two lines in one call:
+# algo.Grid(coordinates=[[0, 2, 5, 10], None, None], spacing=[None, None, (["0.5", "2"], [0.5])])
 mesh.Compute()
 </pre>
 <h2>Limits</h2>

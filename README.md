@@ -22,14 +22,21 @@ mesh = smesh.Mesh(shape)                  # algorithm on the main shape (all sol
 algo = mesh.Voxel()
 hyp = algo.Grid(nbCells=[40, 40, 20])     # or step=2.5, keepOutsideCells=True
 hyp.SetStep(2, 5.0)                       # axis 0=X, 1=Y, 2=Z
+hyp.SetCoordinates(0, [0, 2, 5, 10])      # X node coordinates
+hyp.SetSpacing(2, ["0.5", "2"], [0.5])    # Z: 0.5 up to the middle, then 2
+# same two lines in one call:
+# algo.Grid(coordinates=[[0, 2, 5, 10], None, None], spacing=[None, None, (["0.5", "2"], [0.5])])
 mesh.Compute()
 ```
 
 Hypothesis **Voxel Grid**:
 
-- per axis, a number of cells n (spacing = extent / n), or a step s
+- per axis, a number of cells n (spacing = extent / n), a step s
   (n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box
-  of the solids exactly);
+  of the solids exactly), absolute node coordinates (the grid then spans first..last value
+  along that axis; solids beyond are cut, with a warning), or spacing functions f(t) with
+  internal points as in Body Fitting (t over [0, 1] across the bounding box, at most about
+  1000 cells per range);
 - cells outside all solids: removed (default) or kept. Kept cells are bound to the main
   shape, which must then be a compound, and a warning gives their number.
 
