@@ -42,4 +42,19 @@ for bad in (lambda: hyp_m.SetCoordinates(0, [1.]),
     except SALOME.SALOME_Exception:
         pass
 assert list(hyp_m.GetCoordinates(0)) == [0, 2, 5, 10] and hyp_m.GetMode(2) == 3
+
+# one spacing string for all axes, like nbCells/step; wrong shapes raise TypeError
+algo_m.Grid(spacing="0.5")
+assert [hyp_m.GetMode(a) for a in range(3)] == [3, 3, 3]
+assert all(list(hyp_m.GetSpacing(a)[0]) == ["0.5"] for a in range(3))
+for bad in (lambda: algo_m.Grid(coordinates=[0, 5, 10]),
+            lambda: algo_m.Grid(coordinates=[[0, 5], None]),
+            lambda: algo_m.Grid(spacing={"x": 1}),
+            lambda: algo_m.Grid(spacing=[None, None, ("0.5", [])]),
+            lambda: algo_m.Grid(spacing=[None, None, 0.5])):
+    try:
+        bad()
+        raise AssertionError("no TypeError")
+    except TypeError:
+        pass
 print("OK")
