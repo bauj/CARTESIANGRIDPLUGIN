@@ -34,11 +34,12 @@ public:
   void SetEventListener(SMESH_subMesh* subMesh) override;
 
 private:
-  void removeMeshOnMainShape(SMESH_Mesh& aMesh);
+  void removeMeshOnShape(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape);
 
-  //! Checks shared by Compute and Evaluate, then cell owners; false with error() set on failure
-  bool prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape, VoxelPlugin_Classifier& classifier,
-               VoxelPlugin_Grid& grid, std::vector<int>& owners, std::size_t* nbUnknown = nullptr);
+  //! Checks shared by Compute and Evaluate, then cell owners of the grid covering all solids
+  //! of the main shape; false with error() set on failure
+  bool prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& classifier, VoxelPlugin_Grid& grid,
+               std::vector<int>& owners, std::size_t* nbUnknown = nullptr);
 
   const VoxelPlugin_Hypothesis* _hyp;
 };
