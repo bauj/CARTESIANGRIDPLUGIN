@@ -15,8 +15,9 @@ the deepest volume wins.</p>
 <li><b>Coordinates</b>: absolute node coordinates (text <code>0 1 2.5 10</code>, sorted on input,
 at least 2 distinct values). The grid spans the first to the last value along that axis, whatever
 the bounding box: parts of solids beyond it are not meshed (warning);</li>
-<li><b>Spacing</b>: spacing functions f(t), t from 0 to 1 across the bounding box, as in Body Fitting
-(text <code>f1 ; t1 ; f2</code>: function f1 up to internal point t1, then f2). At most about
+<li><b>Spacing</b>: spacing functions f(t), as in Body Fitting (text <code>f1 ; t1 ; f2</code>:
+function f1 up to internal point t1, then f2). Internal points, between 0 and 1, split the bounding
+box into ranges; t runs from 0 to 1 within each range. At most about
 1000 cells per range between internal points; add internal points for finer grids.</li>
 </ul>
 The extent is the tight bounding box of the solids. Modes can differ between axes.</li>

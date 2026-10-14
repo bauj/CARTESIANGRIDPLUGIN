@@ -34,8 +34,9 @@ public:
   void SetCoordinates(int axis, const std::vector<double>& coords);
   const std::vector<double>& GetCoordinates(int axis) const;
 
-  //! spacing functions f(t), t in [0,1] over the bounding box, and the internal points
-  //! (strictly increasing in ]0,1[, one less than functions) splitting it (mode SPACING)
+  //! spacing functions f(t) and the internal points (strictly increasing in ]0,1[, one less
+  //! than functions) splitting the bounding box into ranges; t runs from 0 to 1 within each
+  //! range (mode SPACING, as Body Fitting)
   void SetSpacing(int axis, const std::vector<std::string>& functions, const std::vector<double>& points);
   const std::vector<std::string>& GetSpacingFunctions(int axis) const;
   const std::vector<double>&      GetSpacingPoints(int axis) const;

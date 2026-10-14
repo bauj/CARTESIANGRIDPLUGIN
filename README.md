@@ -35,8 +35,8 @@ Hypothesis **Voxel Grid**:
   (n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box
   of the solids exactly), absolute node coordinates (the grid then spans first..last value
   along that axis; solids beyond are cut, with a warning), or spacing functions f(t) with
-  internal points as in Body Fitting (t over [0, 1] across the bounding box, at most about
-  1000 cells per range);
+  internal points as in Body Fitting (internal points in ]0, 1[ split the bounding box into
+  ranges, t runs from 0 to 1 within each range, at most about 1000 cells per range);
 - cells outside all solids: removed (default) or kept. Kept cells are bound to the main
   shape, which must then be a compound, and a warning gives their number.
 

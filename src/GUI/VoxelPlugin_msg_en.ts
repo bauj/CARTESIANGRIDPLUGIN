@@ -16,7 +16,7 @@
     <message><source>VOXEL_COORDINATES</source><translation>Coordinates</translation></message>
     <message><source>VOXEL_SPACING</source><translation>Spacing</translation></message>
     <message><source>VOXEL_COORDINATES_TIP</source><translation>Absolute node coordinates, e.g. 0 1 2.5 10</translation></message>
-    <message><source>VOXEL_SPACING_TIP</source><translation>Spacing functions of t in [0,1] over the bounding box and internal points between them, e.g. 0.2 ; 0.5 ; 0.2+t</translation></message>
+    <message><source>VOXEL_SPACING_TIP</source><translation>Spacing functions f(t) and internal points between them, e.g. 0.2 ; 0.5 ; 0.2+t. Internal points (0 to 1) split the bounding box into ranges; t runs from 0 to 1 within each range</translation></message>
     <message><source>VOXEL_BAD_STEP</source><translation>Step must be positive</translation></message>
 </context>
 </TS>
