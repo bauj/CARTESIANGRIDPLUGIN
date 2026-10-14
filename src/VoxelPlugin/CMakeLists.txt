@@ -80,5 +80,6 @@ INSTALL(FILES ${VoxelEngine_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
 SET(_bin_SCRIPTS
   __init__.py
   VoxelPluginBuilder.py
+  VoxelPluginExportDialog.py
 )
 SALOME_INSTALL_SCRIPTS("${_bin_SCRIPTS}" ${SALOME_INSTALL_PYTHON}/salome/VoxelPlugin)
