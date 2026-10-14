@@ -42,6 +42,42 @@ Hypothesis **Voxel Grid**:
 
 In the GUI: *Create Mesh*, 3D algorithm *Voxel 3D*, hypothesis *Voxel Grid*.
 
+## Cartesian MED export
+
+Writes the grid of a Voxel mesh to a MED file as a **Cartesian mesh** (three coordinate arrays,
+one zone per cell): far smaller than an unstructured MED export.
+
+- GUI: select the mesh, *Mesh > SMESH plugins > Cartesian Grid MED Export...*: file, source,
+  zone prefix; progress bar and Cancel; a summary gives the cells per zone.
+- Python:
+
+```python
+algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
+# or on any mesh with the Voxel 3D algorithm (smeshBuilder or CORBA mesh):
+from salome.VoxelPlugin import VoxelPluginBuilder
+summary = VoxelPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
+```
+
+- Sources:
+  - `geometry` (default): no mesh element is created. Zones are the geometry groups (GEOM or
+    SHAPERSTUDY, e.g. the SHAPER `MAT_*` material groups) of the main shape whose name starts
+    with the prefix; each cell takes the zone of the solid containing its center (same rule
+    as Compute). A solid in two zone groups is an error. Solids in no zone group are listed in
+    the summary; their cells get no zone.
+  - `mesh`: zones are the volume groups of the computed mesh whose name starts with the prefix.
+    A cell in two zone groups is an error, so is a mesh not computed.
+- File layout: one `MEDFileCMesh` named after the mesh, coordinate components `X`, `Y`, `Z`;
+  cells numbered i fastest, then j, then k; cell family `0` = no zone (outside cells, solids
+  in no zone group); zone groups sorted by name get families `-1, -2, ...` named
+  `FAM_<group>`, each holding the group `<group>`. Group names are at most 60 characters.
+- Reading it in a solver with the MED C library: `MEDmeshInfo` (`MED_STRUCTURED_MESH`,
+  `MED_CARTESIAN_GRID`), `MEDmeshGridIndexCoordinateRd` per axis,
+  `MEDmeshEntityFamilyNumberRd` on `MED_CELL` / `MED_HEXA8`, then `MEDnFamily` and
+  `MEDfamilyInfo` for the group names of each family. Read zones by group name, not by family
+  number, and accept families holding several groups (planned for mixed cells).
+- SMESH (*File > Import > MED*) and ParaVis open the file; SMESH shows the group names padded
+  with spaces.
+
 ## Limits
 
 - The algorithm must be assigned to the main shape; no sub-meshes.
@@ -60,7 +96,9 @@ In the GUI: *Create Mesh*, 3D algorithm *Voxel 3D*, hypothesis *Voxel Grid*.
 |---|---|
 | `src/VoxelPlugin/VoxelPlugin_Grid.hxx`, `VoxelPlugin_Classifier.*` | pure OCCT core: grid and multithreaded cell owner classifier (`libVoxelCore`) |
 | `src/VoxelPlugin/VoxelPlugin_Voxel_3D*`, `VoxelPlugin_Hypothesis*`, `VoxelPlugin_i.cxx` | SMESH algorithm, hypothesis, CORBA servants, factory (`libVoxelEngine`) |
-| `src/VoxelPlugin/VoxelPluginBuilder.py` | Python API (`mesh.Voxel()`) |
+| `src/VoxelPlugin/VoxelPlugin_CartesianMED.*` | MED Cartesian file writer (MEDLoader) |
+| `src/VoxelPlugin/VoxelPluginBuilder.py` | Python API (`mesh.Voxel()`, `ExportCartesianMED`) |
+| `src/VoxelPlugin/VoxelPluginExportDialog.py`, `src/GUI/smesh_plugins.py` | *Cartesian Grid MED Export* dialog and its SMESH plugins menu entry |
 | `src/GUI` | hypothesis dialog (`libVoxelPluginGUI`) |
 | `idl/VoxelPlugin_Algorithm.idl` | CORBA interfaces |
 | `resources/VoxelPlugin.xml` | meshers declaration for SMESH |

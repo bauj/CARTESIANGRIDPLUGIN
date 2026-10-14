@@ -29,6 +29,25 @@ bound to the main shape, which must then be a compound; a warning gives their nu
 <p>Create solid groups on the geometry (in SHAPER GDML mode: <i>Create material groups</i> gives
 <code>MAT_&lt;material&gt;</code> groups), then tick <i>Create all groups on geometry</i> in the
 mesh dialog: one mesh group per material.</p>
+<h2>Cartesian MED export</h2>
+<p>Select the mesh, then <i>Mesh &gt; SMESH plugins &gt; Cartesian Grid MED Export...</i>: the grid is written to a MED
+file as a Cartesian mesh (three coordinate arrays, one zone per cell), far smaller than an unstructured export.
+A progress bar and Cancel are shown; a summary gives the cells per zone.</p>
+<ul>
+<li><b>From Geometry</b> (default, no mesh element needed): zones are the geometry groups of the main shape whose
+name starts with the <i>zone prefix</i> (<code>MAT_</code> by default, empty: all groups); a cell takes the zone of the
+solid containing its center. A solid in two zone groups is an error; solids in no zone group are listed in the summary.</li>
+<li><b>From Computed mesh</b>: zones are the mesh volume groups whose name starts with the prefix. A cell in two
+zone groups is an error.</li>
+<li><b>File</b>: one Cartesian mesh named after the mesh, components X, Y, Z, cells numbered i fastest, then j, then k.
+Family 0: no zone; zone groups sorted by name get families -1, -2, ... named <code>FAM_&lt;group&gt;</code>, each holding
+the group. Group names: at most 60 characters.</li>
+<li><b>Solver reading</b> (MED C library): <code>MEDmeshInfo</code>, <code>MEDmeshGridIndexCoordinateRd</code> per axis,
+<code>MEDmeshEntityFamilyNumberRd</code> on <code>MED_CELL</code>/<code>MED_HEXA8</code>, <code>MEDnFamily</code> and
+<code>MEDfamilyInfo</code> for the group names. Read zones by group name and accept families holding several groups
+(planned for mixed cells).</li>
+<li>SMESH (<i>File &gt; Import &gt; MED</i>) and ParaVis open the file; SMESH shows the group names padded with spaces.</li>
+</ul>
 <h2>Python</h2>
 <pre>
 mesh = smesh.Mesh(shape)
@@ -40,6 +59,7 @@ hyp.SetSpacing(2, ["0.5", "2"], [0.5])  # Z: 0.5 up to the middle, then 2
 # same two lines in one call:
 # algo.Grid(coordinates=[[0, 2, 5, 10], None, None], spacing=[None, None, (["0.5", "2"], [0.5])])
 mesh.Compute()
+algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
 </pre>
 <h2>Limits</h2>
 <ul>
