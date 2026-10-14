@@ -30,19 +30,41 @@ class Voxel_3D_Algorithm(Mesh_Algorithm):
         self.Create(mesh, geom, self.algoType, "libVoxelEngine.so")
         self.params = None
 
-    def Grid(self, nbCells=None, step=None, keepOutsideCells=None):
+    @staticmethod
+    def _perAxis(values):
+        """[(axis, value)] of one value for all axes or a list of 3, None entries skipped"""
+        if values is None:
+            return []
+        if not isinstance(values, (list, tuple)):
+            values = [values] * 3
+        return [(axis, v) for axis, v in enumerate(values) if v is not None]
+
+    def Grid(self, nbCells=None, step=None, coordinates=None, spacing=None, keepOutsideCells=None):
         """Return the VoxelGrid hypothesis (created on first call).
-        nbCells or step: one number for all axes or a list of 3."""
+        Applied in this order: nbCells, step, coordinates, spacing.
+        nbCells or step: one number for all axes or a list of 3 (None leaves an axis untouched).
+        coordinates: list of 3, each None or the absolute node coordinates of the axis.
+        spacing: list of 3, each None, a function of t (str), or (functions, internalPoints)
+        as Body Fitting SetGridSpacing; t runs over [0, 1] across the bounding box."""
         if not self.params:
             self.params = self.Hypothesis("VoxelGrid", [], "libVoxelEngine.so", UseExisting=0)
-        if nbCells is not None:
-            values = nbCells if isinstance(nbCells, (list, tuple)) else [nbCells] * 3
-            for axis, n in enumerate(values):
-                self.params.SetNbCells(axis, n)
-        if step is not None:
-            values = step if isinstance(step, (list, tuple)) else [step] * 3
-            for axis, s in enumerate(values):
-                self.params.SetStep(axis, s)
+        for axis, n in self._perAxis(nbCells):
+            self.params.SetNbCells(axis, n)
+        for axis, s in self._perAxis(step):
+            self.params.SetStep(axis, s)
+        if coordinates is not None:
+            for axis, c in enumerate(coordinates):
+                if c is not None:
+                    self.params.SetCoordinates(axis, [float(x) for x in c])
+        if spacing is not None:
+            for axis, s in enumerate(spacing):
+                if s is None:
+                    continue
+                if isinstance(s, str):
+                    self.params.SetSpacing(axis, [s], [])
+                else:
+                    functions, points = s
+                    self.params.SetSpacing(axis, list(functions), [float(t) for t in points])
         if keepOutsideCells is not None:
             self.params.SetKeepOutsideCells(keepOutsideCells)
         return self.params
