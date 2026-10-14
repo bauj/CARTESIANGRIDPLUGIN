@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <system_error>
 #include <thread>
 
 VoxelPlugin_Classifier::Status VoxelPlugin_Classifier::Init(const TopoDS_Shape& theShape)
@@ -122,8 +123,15 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
   };
 
   std::vector<std::thread> threads;
-  for (int t = 1; t < nbThreads; ++t)
-    threads.emplace_back(work);
+  try
+  {
+    for (int t = 1; t < nbThreads; ++t)
+      threads.emplace_back(work);
+  }
+  catch (const std::system_error&)
+  {
+    // no more threads available: the started ones and this one share the slabs
+  }
   work();
   for (std::thread& t : threads)
     t.join();
