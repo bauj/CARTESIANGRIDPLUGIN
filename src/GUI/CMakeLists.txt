@@ -39,6 +39,7 @@ SET(_link_LIBRARIES
 )
 
 SET(_moc_HEADERS
+  VoxelPluginGUI_AxisTab.h
   VoxelPluginGUI_HypothesisCreator.h
 )
 
@@ -46,6 +47,7 @@ QT_WRAP_MOC(_moc_SOURCES ${_moc_HEADERS})
 
 SET(VoxelPluginGUI_SOURCES
   VoxelPluginGUI.cxx
+  VoxelPluginGUI_AxisTab.cxx
   VoxelPluginGUI_HypothesisCreator.cxx
   ${_moc_SOURCES}
 )
