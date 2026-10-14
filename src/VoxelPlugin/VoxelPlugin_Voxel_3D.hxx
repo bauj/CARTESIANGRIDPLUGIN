@@ -38,7 +38,7 @@ private:
 
   //! Checks shared by Compute and Evaluate, then cell owners; false with error() set on failure
   bool prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape, VoxelPlugin_Classifier& classifier,
-               VoxelPlugin_Grid& grid, std::vector<int>& owners);
+               VoxelPlugin_Grid& grid, std::vector<int>& owners, std::size_t* nbUnknown = nullptr);
 
   const VoxelPlugin_Hypothesis* _hyp;
 };

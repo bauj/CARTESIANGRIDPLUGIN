@@ -33,7 +33,10 @@ public:
 
   //! Owner solid index per cell (VoxelPlugin_Grid::CellIndex order), -1 outside all solids.
   //! theNbThreads <= 0: hardware concurrency. Rethrows the first exception of a worker.
-  std::vector<int> Classify(const VoxelPlugin_Grid& theGrid, int theNbThreads = 0) const;
+  //! A center the OCCT classifier cannot locate in a solid (UNKNOWN state, even at a slightly
+  //! shifted point) is taken as outside that solid and counted in theNbUnknown.
+  std::vector<int> Classify(const VoxelPlugin_Grid& theGrid, int theNbThreads = 0,
+                            std::size_t* theNbUnknown = nullptr) const;
 
   //! Tight bounding box of the solids of theShape (exact geometry, no tolerance enlargement);
   //! false if there is no solid

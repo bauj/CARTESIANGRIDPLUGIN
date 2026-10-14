@@ -152,7 +152,7 @@ void VoxelPlugin_Voxel_3D::removeMeshOnMainShape(SMESH_Mesh& aMesh)
 
 bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape,
                                    VoxelPlugin_Classifier& classifier, VoxelPlugin_Grid& grid,
-                                   std::vector<int>& owners)
+                                   std::vector<int>& owners, std::size_t* nbUnknown)
 {
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
@@ -193,7 +193,7 @@ bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
                  SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
                  << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
   grid = _hyp->MakeGrid(minC, maxC);
-  owners = classifier.Classify(grid);
+  owners = classifier.Classify(grid, /*theNbThreads=*/0, nbUnknown);
   return true;
 }
 
@@ -210,7 +210,8 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
     VoxelPlugin_Classifier classifier;
     VoxelPlugin_Grid grid;
     std::vector<int> owners;
-    if (!prepare(aMesh, aShape, classifier, grid, owners))
+    std::size_t nbUnknown = 0;
+    if (!prepare(aMesh, aShape, classifier, grid, owners, &nbUnknown))
       return false;
     const bool keepOutside = _hyp->GetKeepOutsideCells();
 
@@ -268,7 +269,10 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
     if (nbOutside > 0)
       warning << nbOutside << " cell(s) outside all solids kept on the main shape. ";
     if (nbEmpty > 0)
-      warning << nbEmpty << " solid(s) own no cell, refine the grid.";
+      warning << nbEmpty << " solid(s) own no cell, refine the grid. ";
+    if (nbUnknown > 0)
+      warning << nbUnknown << " cell center(s) could not be located in a solid and were taken"
+              << " as outside it, check the geometry.";
     if (!warning.empty())
       error(COMPERR_WARNING, warning);
     return true;

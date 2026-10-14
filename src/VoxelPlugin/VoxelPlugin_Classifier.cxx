@@ -11,6 +11,7 @@
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Vec.hxx>
 
 #include <algorithm>
 #include <atomic>
@@ -66,8 +67,11 @@ VoxelPlugin_Classifier::Status VoxelPlugin_Classifier::Init(const TopoDS_Shape& 
 }
 
 std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGrid,
-                                                  int                     theNbThreads) const
+                                                  int                     theNbThreads,
+                                                  std::size_t*            theNbUnknown) const
 {
+  if (theNbUnknown)
+    *theNbUnknown = 0;
   std::vector<int> owners(theGrid.NbCells(), -1);
   const int nx = theGrid.NbCells(0), ny = theGrid.NbCells(1), nz = theGrid.NbCells(2);
   if (owners.empty() || mySolids.empty())
@@ -78,11 +82,14 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
     for (int i = 0; i < theGrid.NbCells(a); ++i)
       minStep = std::min(minStep, theGrid.coords[a][i + 1] - theGrid.coords[a][i]);
   const double tol = 1e-6 * minStep;
+  // retry of an UNKNOWN state: off the center along a skew direction, still inside the cell
+  const gp_Vec shift = gp_Vec(1., 0.71, 0.37) * (1e-3 * minStep);
 
   int nbThreads = theNbThreads > 0 ? theNbThreads : (int)std::thread::hardware_concurrency();
   nbThreads = std::max(1, std::min(nbThreads, nz));
 
-  std::atomic<int>   nextK(0);
+  std::atomic<int>         nextK(0);
+  std::atomic<std::size_t> nbUnknown(0);
   std::exception_ptr firstError;
   std::mutex         errorMutex;
 
@@ -104,7 +111,14 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
               if (!classifiers[s])
                 classifiers[s].reset(new BRepClass3d_SolidClassifier(mySolids[s]));
               classifiers[s]->Perform(p, tol);
-              const TopAbs_State state = classifiers[s]->State();
+              TopAbs_State state = classifiers[s]->State();
+              if (state == TopAbs_UNKNOWN)
+              {
+                classifiers[s]->Perform(p.Translated(shift), tol);
+                state = classifiers[s]->State();
+                if (state == TopAbs_UNKNOWN)
+                  ++nbUnknown;
+              }
               if (state == TopAbs_IN || state == TopAbs_ON)
               {
                 owners[theGrid.CellIndex(i, j, k)] = s;
@@ -137,6 +151,8 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
     t.join();
   if (firstError)
     std::rethrow_exception(firstError);
+  if (theNbUnknown)
+    *theNbUnknown = nbUnknown;
   return owners;
 }
 

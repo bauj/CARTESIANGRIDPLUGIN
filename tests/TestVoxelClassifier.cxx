@@ -92,7 +92,9 @@ static void sphereVolumeAndTightBox()
     CHECK(std::abs(mn[a] + 10.) < 1e-6 && std::abs(mx[a] - 10.) < 1e-6);
   VoxelPlugin_Classifier c;
   CHECK(c.Init(sphere) == VoxelPlugin_Classifier::OK);
-  std::vector<int> owners = c.Classify(uniformGrid(mn, mx, 40, 40, 40));
+  std::size_t nbUnknown = 1;
+  std::vector<int> owners = c.Classify(uniformGrid(mn, mx, 40, 40, 40), 0, &nbUnknown);
+  CHECK(nbUnknown == 0);
   int nbIn = 0;
   for (int o : owners) nbIn += (o == 0);
   const double cellVolume = 0.5 * 0.5 * 0.5, exact = 4. / 3. * M_PI * 1000.;
