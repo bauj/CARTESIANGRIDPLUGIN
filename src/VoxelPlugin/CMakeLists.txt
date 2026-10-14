@@ -42,6 +42,7 @@ INSTALL(FILES ${VoxelCore_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
 
 # SMESH engine: hypothesis, algorithm, servants, factory
 SET(VoxelEngine_HEADERS
+  VoxelPlugin_CartesianMED.hxx
   VoxelPlugin_Hypothesis.hxx
   VoxelPlugin_Hypothesis_i.hxx
   VoxelPlugin_Voxel_3D.hxx
@@ -49,6 +50,7 @@ SET(VoxelEngine_HEADERS
 )
 
 SET(VoxelEngine_SOURCES
+  VoxelPlugin_CartesianMED.cxx
   VoxelPlugin_Hypothesis.cxx
   VoxelPlugin_Hypothesis_i.cxx
   VoxelPlugin_i.cxx
@@ -69,6 +71,7 @@ TARGET_LINK_LIBRARIES(VoxelEngine
   ${SMESH_SMESHimpl}
   ${SMESH_SMESHEngine}
   ${SMESH_StdMeshers}
+  ${MEDCoupling_medloader}
   SalomeIDLVOXELPLUGIN
 )
 INSTALL(TARGETS VoxelEngine EXPORT ${PROJECT_NAME}TargetGroup DESTINATION ${SALOME_INSTALL_LIBS})
