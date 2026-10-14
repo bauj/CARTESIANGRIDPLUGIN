@@ -25,6 +25,9 @@
 
 namespace
 {
+  //! part of the compute time spent classifying cells (measured: 85% on a sphere)
+  const double theClassifyShare = 0.8;
+
   const char* shapeTypeName(TopAbs_ShapeEnum type)
   {
     static const char* names[] = { "COMPOUND", "COMPSOLID", "SOLID", "SHELL",
@@ -33,20 +36,26 @@ namespace
   }
 
   //! Calls f(i, j, k, owner) for each hexahedron to create: owned cells first,
-  //! then outside cells (owner -1) when they are kept
+  //! then outside cells (owner -1) when they are kept. False if stopped by *canceled.
   template <class F>
-  void forEachHexa(const VoxelPlugin_Grid& grid, const std::vector<int>& owners, bool keepOutside, F f)
+  bool forEachHexa(const VoxelPlugin_Grid& grid, const std::vector<int>& owners, bool keepOutside, F f,
+                   const volatile bool* canceled = nullptr)
   {
     const int nx = grid.NbCells(0), ny = grid.NbCells(1), nz = grid.NbCells(2);
     for (int pass = 0; pass < (keepOutside ? 2 : 1); ++pass)
       for (int k = 0; k < nz; ++k)
         for (int j = 0; j < ny; ++j)
+        {
+          if (canceled && *canceled)
+            return false;
           for (int i = 0; i < nx; ++i)
           {
             const int owner = owners[grid.CellIndex(i, j, k)];
             if ((owner >= 0) == (pass == 0))
               f(i, j, k, owner);
           }
+        }
+    return true;
   }
 
   /*!
@@ -103,7 +112,7 @@ namespace
 }
 
 VoxelPlugin_Voxel_3D::VoxelPlugin_Voxel_3D(int hypId, SMESH_Gen* gen)
-  : SMESH_3D_Algo(hypId, gen), _hyp(nullptr)
+  : SMESH_3D_Algo(hypId, gen), _hyp(nullptr), _nbDoneSlabs(0), _nbSlabs(0)
 {
   _name = "Voxel_3D";
   _shapeType = (1 << TopAbs_SOLID);
@@ -149,7 +158,7 @@ void VoxelPlugin_Voxel_3D::removeMeshOnShape(SMESH_Mesh& aMesh, const TopoDS_Sha
 
 bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& classifier,
                                    VoxelPlugin_Grid& grid, std::vector<int>& owners,
-                                   std::size_t* nbUnknown)
+                                   std::size_t* nbUnknown, bool forCompute)
 {
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
@@ -190,7 +199,14 @@ bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& cl
                  SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
                  << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
   grid = _hyp->MakeGrid(minC, maxC);
-  owners = classifier.Classify(grid, /*theNbThreads=*/0, nbUnknown);
+  if (forCompute)
+  {
+    _nbDoneSlabs = 0;
+    _nbSlabs = grid.NbCells(2);
+    owners = classifier.Classify(grid, /*theNbThreads=*/0, nbUnknown, &_computeCanceled, &_nbDoneSlabs);
+  }
+  else
+    owners = classifier.Classify(grid, /*theNbThreads=*/0, nbUnknown);
   return true;
 }
 
@@ -198,6 +214,8 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
 {
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
+
+  _nbSlabs = 0; // no progress of a previous compute
 
   // also on failure: no stale outside cells of a previous compute
   removeMeshOnShape(aMesh, mainShape);
@@ -216,8 +234,10 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
     VoxelPlugin_Grid grid;
     std::vector<int> owners;
     std::size_t nbUnknown = 0;
-    if (!prepare(aMesh, classifier, grid, owners, &nbUnknown))
+    if (!prepare(aMesh, classifier, grid, owners, &nbUnknown, /*forCompute=*/true))
       return false;
+    if (_computeCanceled)
+      return error(COMPERR_CANCELED, "Compute canceled");
     for (int i = 1; i <= solidsLeftOut.Extent(); ++i)
       removeMeshOnShape(aMesh, solidsLeftOut(i));
     const bool keepOutside = _hyp->GetKeepOutsideCells();
@@ -242,9 +262,12 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
       return n;
     };
 
+    std::size_t nbHexas = 0;
+    for (int owner : owners)
+      nbHexas += (owner >= 0 || keepOutside);
     std::vector<int> nbCellsOfSolid(classifier.NbSolids(), 0);
-    std::size_t nbOutside = 0;
-    forEachHexa(grid, owners, keepOutside, [&](int i, int j, int k, int owner)
+    std::size_t nbOutside = 0, nbDone = 0;
+    const bool done = forEachHexa(grid, owners, keepOutside, [&](int i, int j, int k, int owner)
     {
       const int shapeIndex = owner < 0 ? mainIndex : solidIndex[owner];
       SMDS_MeshVolume* hexa = meshDS->AddVolume(
@@ -257,7 +280,16 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
         ++nbOutside;
       else
         ++nbCellsOfSolid[owner];
-    });
+      _progress = theClassifyShare + (1. - theClassifyShare) * (double)++nbDone / (double)nbHexas;
+    }, &_computeCanceled);
+    if (!done)
+    {
+      // nothing half done is left
+      removeMeshOnShape(aMesh, mainShape);
+      for (int s = 0; s < classifier.NbSolids(); ++s)
+        removeMeshOnShape(aMesh, classifier.Solid(s));
+      return error(COMPERR_CANCELED, "Compute canceled");
+    }
 
     // solids owning no cell must not fail the compute
     int nbEmpty = 0;
@@ -377,6 +409,13 @@ bool VoxelPlugin_Voxel_3D::Evaluate(SMESH_Mesh& aMesh, const TopoDS_Shape& aShap
     aResMap[aMesh.GetSubMesh(aShape)] = failed;
   }
   return ok;
+}
+
+double VoxelPlugin_Voxel_3D::GetProgress() const
+{
+  if (_progress > 0.)
+    return _progress;
+  return _nbSlabs > 0 ? theClassifyShare * _nbDoneSlabs / _nbSlabs : 0.;
 }
 
 void VoxelPlugin_Voxel_3D::SetEventListener(SMESH_subMesh* subMesh)

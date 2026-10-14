@@ -7,4 +7,5 @@ SET(TEST_NAMES
   voxel_gdml_file
   voxel_evaluate
   voxel_states
+  voxel_cancel
 )

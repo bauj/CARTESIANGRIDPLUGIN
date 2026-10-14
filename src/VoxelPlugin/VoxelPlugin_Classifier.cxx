@@ -68,7 +68,9 @@ VoxelPlugin_Classifier::Status VoxelPlugin_Classifier::Init(const TopoDS_Shape& 
 
 std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGrid,
                                                   int                     theNbThreads,
-                                                  std::size_t*            theNbUnknown) const
+                                                  std::size_t*            theNbUnknown,
+                                                  const volatile bool*    theCanceled,
+                                                  std::atomic<int>*       theNbDoneSlabs) const
 {
   if (theNbUnknown)
     *theNbUnknown = 0;
@@ -100,7 +102,14 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
       // one classifier per solid and per thread, built on first use
       std::vector<std::unique_ptr<BRepClass3d_SolidClassifier>> classifiers(mySolids.size());
       for (int k = nextK++; k < nz; k = nextK++)
+      {
         for (int j = 0; j < ny; ++j)
+        {
+          if (theCanceled && *theCanceled)
+          {
+            nextK = nz;
+            return;
+          }
           for (int i = 0; i < nx; ++i)
           {
             const gp_Pnt p(theGrid.Center(0, i), theGrid.Center(1, j), theGrid.Center(2, k));
@@ -126,6 +135,10 @@ std::vector<int> VoxelPlugin_Classifier::Classify(const VoxelPlugin_Grid& theGri
               }
             }
           }
+        }
+        if (theNbDoneSlabs)
+          ++*theNbDoneSlabs;
+      }
     }
     catch (...)
     {

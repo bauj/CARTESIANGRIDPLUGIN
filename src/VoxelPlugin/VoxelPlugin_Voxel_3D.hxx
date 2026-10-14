@@ -9,6 +9,7 @@
 
 #include <SMESH_Algo.hxx>
 
+#include <atomic>
 #include <vector>
 
 class VoxelPlugin_Classifier;
@@ -33,15 +34,20 @@ public:
 
   void SetEventListener(SMESH_subMesh* subMesh) override;
 
+  //! Classification of the cells up to 0.8, then creation of nodes and hexahedra
+  double GetProgress() const override;
+
 private:
   void removeMeshOnShape(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape);
 
   //! Checks shared by Compute and Evaluate, then cell owners of the grid covering all solids
-  //! of the main shape; false with error() set on failure
+  //! of the main shape; false with error() set on failure. forCompute: cancelable, progress.
   bool prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& classifier, VoxelPlugin_Grid& grid,
-               std::vector<int>& owners, std::size_t* nbUnknown = nullptr);
+               std::vector<int>& owners, std::size_t* nbUnknown = nullptr, bool forCompute = false);
 
   const VoxelPlugin_Hypothesis* _hyp;
+  std::atomic<int>              _nbDoneSlabs; //!< classified k-slabs of the current compute
+  int                           _nbSlabs;
 };
 
 #endif

@@ -19,6 +19,8 @@
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
 
+#include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <iostream>
 
@@ -196,6 +198,25 @@ static void threadsAgree()
   CHECK(c.Classify(g, 1) == c.Classify(g, 4));
 }
 
+static void cancelAndProgress()
+{
+  VoxelPlugin_Classifier c;
+  CHECK(c.Init(BRepPrimAPI_MakeSphere(gp_Pnt(0, 0, 0), 10.).Shape()) == VoxelPlugin_Classifier::OK);
+  const double mn[3] = { -10, -10, -10 }, mx[3] = { 10, 10, 10 };
+  VoxelPlugin_Grid g = uniformGrid(mn, mx, 8, 8, 12);
+  std::atomic<int> nbDone(0);
+  bool canceled = false;
+  std::vector<int> owners = c.Classify(g, 3, nullptr, &canceled, &nbDone);
+  CHECK(nbDone == 12);
+  CHECK(owners == c.Classify(g, 1));
+  // canceled before start: nothing classified
+  canceled = true;
+  nbDone = 0;
+  owners = c.Classify(g, 3, nullptr, &canceled, &nbDone);
+  CHECK(nbDone == 0);
+  CHECK(std::count(owners.begin(), owners.end(), -1) == (long)owners.size());
+}
+
 int main()
 {
   gridHelpers();
@@ -208,6 +229,7 @@ int main()
   noSolid();
   openSolid();
   threadsAgree();
+  cancelAndProgress();
   boxIgnoresNonSolids();
   std::cout << (nbFailures ? "FAILED: " : "OK ") << nbFailures << " failure(s)\n";
   return nbFailures ? 1 : 0;

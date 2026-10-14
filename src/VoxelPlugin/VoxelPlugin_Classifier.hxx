@@ -9,6 +9,7 @@
 #include <Bnd_Box.hxx>
 #include <TopoDS_Shape.hxx>
 
+#include <atomic>
 #include <vector>
 
 /*!
@@ -35,8 +36,12 @@ public:
   //! theNbThreads <= 0: hardware concurrency. Rethrows the first exception of a worker.
   //! A center the OCCT classifier cannot locate in a solid (UNKNOWN state, even at a slightly
   //! shifted point) is taken as outside that solid and counted in theNbUnknown.
+  //! Classification stops early when *theCanceled becomes true (owners then incomplete);
+  //! theNbDoneSlabs counts the finished k-slabs of cells, for progress.
   std::vector<int> Classify(const VoxelPlugin_Grid& theGrid, int theNbThreads = 0,
-                            std::size_t* theNbUnknown = nullptr) const;
+                            std::size_t* theNbUnknown = nullptr,
+                            const volatile bool* theCanceled = nullptr,
+                            std::atomic<int>* theNbDoneSlabs = nullptr) const;
 
   //! Tight bounding box of the solids of theShape (exact geometry, no tolerance enlargement);
   //! false if there is no solid
