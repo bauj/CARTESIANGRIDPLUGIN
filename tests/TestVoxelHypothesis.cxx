@@ -7,6 +7,8 @@
 
 #include <Utils_SALOME_Exception.hxx>
 
+#include <sys/resource.h>
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -208,6 +210,18 @@ int main()
       CHECK(b.fail());
       CHECK(d.GetMode(0) == VoxelPlugin_Hypothesis::NB_CELLS && d.GetNbCells(0) == 10);
     }
+  }
+
+  // ---- corrupted v2 announcing 1e8 coordinates: fails without allocating them (800 MB)
+  {
+    rusage before, after;
+    getrusage(RUSAGE_SELF, &before);
+    std::stringstream b("2 2 10 1 100000000 0");
+    VoxelPlugin_Hypothesis d(17, nullptr);
+    d.LoadFrom(b);
+    getrusage(RUSAGE_SELF, &after);
+    CHECK(b.fail());
+    CHECK(after.ru_maxrss - before.ru_maxrss < 100 * 1024); // kB
   }
 
   std::cout << (nbFailures ? "FAILED: " : "OK ") << nbFailures << " failure(s)\n";

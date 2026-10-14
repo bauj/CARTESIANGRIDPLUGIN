@@ -26,6 +26,20 @@ namespace
     n = (std::size_t)v;
     return true;
   }
+
+  //! reads a count, then that many values; memory grows with the values actually read, so a
+  //! corrupted count cannot allocate much before the stream fails
+  bool readValues(std::istream& load, std::vector<double>& values, std::size_t theMax)
+  {
+    std::size_t n = 0;
+    if (!readSize(load, n, theMax))
+      return false;
+    values.clear();
+    double v;
+    for (std::size_t i = 0; i < n && load >> v; ++i)
+      values.push_back(v);
+    return bool(load);
+  }
 }
 
 VoxelPlugin_Hypothesis::VoxelPlugin_Hypothesis(int hypId, SMESH_Gen* gen)
@@ -281,12 +295,9 @@ std::istream& VoxelPlugin_Hypothesis::LoadFrom(std::istream& load)
       return load;
     if (version < 2)
       continue;
-    std::size_t n = 0;
-    if (!readSize(load, n, (std::size_t)VoxelPlugin_Grid::MaxNbCells + 1))
+    if (!readValues(load, coords[a], (std::size_t)VoxelPlugin_Grid::MaxNbCells + 1))
       return load;
-    coords[a].resize(n);
-    for (double& c : coords[a])
-      load >> c;
+    std::size_t n = 0;
     if (!readSize(load, n, 10000))
       return load;
     functions[a].resize(n);
@@ -302,11 +313,8 @@ std::istream& VoxelPlugin_Hypothesis::LoadFrom(std::istream& load)
       if (len > 0 && !load.read(&f[0], (std::streamsize)len))
         return load;
     }
-    if (!readSize(load, n, 10000))
+    if (!readValues(load, points[a], 10000))
       return load;
-    points[a].resize(n);
-    for (double& t : points[a])
-      load >> t;
   }
   load >> keep;
   if (!load)
