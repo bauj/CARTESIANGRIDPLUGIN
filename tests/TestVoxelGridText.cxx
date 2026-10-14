@@ -6,6 +6,7 @@
 #include "VoxelPlugin_Grid.hxx"
 #include "VoxelPlugin_GridText.hxx"
 
+#include <clocale>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -64,6 +65,18 @@ int main()
   CHECK(!ParseSpacing("1 ;  ; 2", f, p, err));        // empty field
   CHECK(FormatSpacing({ "0.2", "0.2 + t" }, { 0.5 }) == "0.2 ; 0.5 ; 0.2 + t");
   CHECK(FormatSpacing({ "1" }, {}) == "1");
+
+  // decimal point whatever the locale (the GUI runs under the user's locale, e.g. fr_FR)
+  if (std::setlocale(LC_NUMERIC, "fr_FR.UTF-8") || std::setlocale(LC_NUMERIC, "fr_FR.utf8"))
+  {
+    CHECK(ParseCoordinates("0 2.5 10", c, err) && c.size() == 3 && c[1] == 2.5);
+    CHECK(FormatCoordinates({ 0, 2.5, 10 }) == "0 2.5 10");
+    CHECK(ParseSpacing("1 ; 0.5 ; 2", f, p, err) && p.size() == 1 && p[0] == 0.5);
+    CHECK(FormatSpacing({ "1", "2" }, { 0.5 }) == "1 ; 0.5 ; 2");
+    std::setlocale(LC_NUMERIC, "C");
+  }
+  else
+    std::cout << "fr_FR locale not available, locale checks skipped\n";
 
   std::cout << (nbFailures ? "FAILED: " : "OK ") << nbFailures << " failure(s)\n";
   return nbFailures ? 1 : 0;

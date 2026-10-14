@@ -3,9 +3,8 @@
 #ifndef _VoxelPlugin_GridText_HXX_
 #define _VoxelPlugin_GridText_HXX_
 
+#include <charconv>
 #include <cmath>
-#include <cstdio>
-#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -13,6 +12,7 @@
  * \brief Text format of the grid modes in the GUI.
  *        Coordinates: numbers separated by spaces and/or commas, "0 1 2.5 10".
  *        Spacing: functions and internal points alternating, separated by ';', "0.2 ; 0.5 ; 0.2+t".
+ *        Numbers always use a decimal point, whatever the locale.
  */
 namespace VoxelPlugin_GridText
 {
@@ -24,24 +24,23 @@ namespace VoxelPlugin_GridText
     return s.substr(b, s.find_last_not_of(" \t") - b + 1);
   }
 
-  //! whole string is one finite number
+  //! whole string is one finite number, locale independent
   inline bool ParseNumber(const std::string& s, double& v)
   {
-    if (s.empty())
-      return false;
-    char* end = nullptr;
-    v = std::strtod(s.c_str(), &end);
-    return end == s.c_str() + s.size() && std::isfinite(v);
+    const char* first = s.c_str();
+    const char* last = first + s.size();
+    if (first != last && *first == '+') // from_chars refuses a leading '+'
+      ++first;
+    const std::from_chars_result r = std::from_chars(first, last, v);
+    return first != last && r.ec == std::errc() && r.ptr == last && std::isfinite(v);
   }
 
-  //! shortest "%.15g" form when it reads back exactly, else "%.17g"
+  //! shortest text reading back exactly, locale independent
   inline std::string FormatNumber(double v)
   {
     char buf[32];
-    std::snprintf(buf, sizeof(buf), "%.15g", v);
-    if (std::strtod(buf, nullptr) != v)
-      std::snprintf(buf, sizeof(buf), "%.17g", v);
-    return buf;
+    const std::to_chars_result r = std::to_chars(buf, buf + sizeof(buf), v);
+    return std::string(buf, r.ptr);
   }
 
   //! at least 2 finite numbers, order kept
