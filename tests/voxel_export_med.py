@@ -106,7 +106,7 @@ text = raises(SALOME.SALOME_Exception, algo.ExportCartesianMED, os.path.join(tmp
               zonePrefix="")
 assert "MAT_IRON" in text and "other" in text, text            # IRON solid in two zone groups
 text = raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), zonePrefix="NOPE")
-assert "NOPE" in text, text
+assert "NOPE" in text and "World" in text and "MAT_AIR" in text, text   # names the shape and its groups
 raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), source="bad")
 assert not os.path.exists(os.path.join(tmp, "x.med"))
 

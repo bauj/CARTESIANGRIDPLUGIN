@@ -27,15 +27,27 @@ def VoxelAlgorithm(mesh):
             return h._narrow(VoxelPlugin.VoxelPlugin_Voxel_3D)
     raise ValueError("The mesh has no %s algorithm" % VOXEL_3D)
 
-def _shapeEngine(shape):
-    """Engine of the study component owning shape (GEOM or SHAPERSTUDY); GetGen() of a
-    SHAPERSTUDY shape does not return the SHAPERSTUDY engine"""
+GEOM_GROUP_TYPE = 37   # GetType() of a group, GEOM and SHAPERSTUDY
+
+def _geometryGroups(shape):
+    """(study name of shape, [(group name, sub-shape ids)]) of the groups published under shape
+    in the study, GEOM or SHAPERSTUDY alike. Read from the study tree: no engine lookup, which can return another
+    module's engine in a GUI session"""
     import salome
+    import GEOM
     so = salome.ObjectToSObject(shape)
     if so is None:
         raise ValueError("The shape of the mesh is not published in the study")
-    component = so.GetFatherComponent().ComponentDataType()
-    return salome.lcc.FindOrLoadComponent("FactoryServer", component)
+    groups = []
+    it = salome.myStudy.NewChildIterator(so)
+    while it.More():
+        child = it.Value()
+        it.Next()
+        obj = child.GetObject()
+        obj = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
+        if obj is not None and obj.GetType() == GEOM_GROUP_TYPE:
+            groups.append((child.GetName(), [i for i in obj.GetSubShapeIndices() if i > 0]))
+    return so.GetName(), groups
 
 def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file
@@ -50,20 +62,19 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     algo = VoxelAlgorithm(smeshMesh)
     zones = []
     if source == "geometry":
-        shape = smeshMesh.GetShapeToMesh()
-        gen = _shapeEngine(shape)
-        groupOp = gen.GetIGroupOperations()
-        for g in gen.GetIShapesOperations().GetExistingSubObjects(shape, True):
-            name = g.GetName()
+        shapeName, groups = _geometryGroups(smeshMesh.GetShapeToMesh())
+        for name, ids in groups:
             if name.startswith(zonePrefix):
-                zones.append(VoxelPlugin.ExportZone(name, list(groupOp.GetObjects(g))))
+                zones.append(VoxelPlugin.ExportZone(name, ids))
+        if not zones:
+            raise ValueError("No geometry group named %s* under %s; its groups: %s"
+                             % (zonePrefix, shapeName, ", ".join(n for n, _ in groups) or "none"))
     else:
         for g in smeshMesh.GetGroups():
             if g.GetType() == SMESH.VOLUME and g.GetName().startswith(zonePrefix):
                 zones.append(VoxelPlugin.ExportZone(g.GetName(), []))
-    if not zones:
-        raise ValueError("No %s group named %s*" % ("geometry" if source == "geometry" else "mesh volume",
-                                                     zonePrefix))
+        if not zones:
+            raise ValueError("No mesh volume group named %s*" % zonePrefix)
     return algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
 
 class Voxel_3D_Algorithm(Mesh_Algorithm):
