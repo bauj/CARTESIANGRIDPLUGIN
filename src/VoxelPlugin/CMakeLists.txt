@@ -20,6 +20,7 @@ ADD_DEFINITIONS(
 SET(VoxelCore_HEADERS
   VoxelPlugin_Defs.hxx
   VoxelPlugin_Grid.hxx
+  VoxelPlugin_GridText.hxx
   VoxelPlugin_Classifier.hxx
 )
 

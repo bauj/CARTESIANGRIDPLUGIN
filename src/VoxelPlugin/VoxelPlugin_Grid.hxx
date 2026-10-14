@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <string>
 #include <vector>
 
 /*!
@@ -58,6 +59,32 @@ struct VoxelPlugin_Grid
     if (!(n <= (double)MaxNbCells)) // also catches inf and nan
       return MaxNbCells + 1;
     return std::max(1LL, (long long)n);
+  }
+
+  //! Sorts theCoords; false with theError when there are fewer than 2 values, a non-finite
+  //! value, or two values closer than 1e-12 x (last - first)
+  static bool SortAndCheckCoordinates(std::vector<double>& theCoords, std::string& theError)
+  {
+    for (double c : theCoords)
+      if (!std::isfinite(c))
+      {
+        theError = "Coordinates must be finite numbers";
+        return false;
+      }
+    if (theCoords.size() < 2)
+    {
+      theError = "At least 2 coordinates are needed";
+      return false;
+    }
+    std::sort(theCoords.begin(), theCoords.end());
+    const double tol = 1e-12 * (theCoords.back() - theCoords.front());
+    for (std::size_t i = 1; i < theCoords.size(); ++i)
+      if (theCoords[i] - theCoords[i - 1] <= tol)
+      {
+        theError = "Duplicate coordinates";
+        return false;
+      }
+    return true;
   }
 };
 
