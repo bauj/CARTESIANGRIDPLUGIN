@@ -5,8 +5,13 @@
 
 #include "VoxelPlugin_Defs.hxx"
 
+#include "VoxelPlugin_Grid.hxx"
+
 #include <SMESH_Algo.hxx>
 
+#include <vector>
+
+class VoxelPlugin_Classifier;
 class VoxelPlugin_Hypothesis;
 
 /*!
@@ -30,6 +35,10 @@ public:
 
 private:
   void removeMeshOnMainShape(SMESH_Mesh& aMesh);
+
+  //! Checks shared by Compute and Evaluate, then cell owners; false with error() set on failure
+  bool prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape, VoxelPlugin_Classifier& classifier,
+               VoxelPlugin_Grid& grid, std::vector<int>& owners);
 
   const VoxelPlugin_Hypothesis* _hyp;
 };

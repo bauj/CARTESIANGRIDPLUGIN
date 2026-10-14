@@ -15,11 +15,13 @@
 #include <SMESH_subMesh.hxx>
 #include <SMESH_subMeshEventListener.hxx>
 
+#include <BRep_Builder.hxx>
 #include <Standard_Failure.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Compound.hxx>
 
 #include <vector>
 
@@ -30,6 +32,23 @@ namespace
     static const char* names[] = { "COMPOUND", "COMPSOLID", "SOLID", "SHELL",
                                    "FACE", "WIRE", "EDGE", "VERTEX", "SHAPE" };
     return names[type];
+  }
+
+  //! Calls f(i, j, k, owner) for each hexahedron to create: owned cells first,
+  //! then outside cells (owner -1) when they are kept
+  template <class F>
+  void forEachHexa(const VoxelPlugin_Grid& grid, const std::vector<int>& owners, bool keepOutside, F f)
+  {
+    const int nx = grid.NbCells(0), ny = grid.NbCells(1), nz = grid.NbCells(2);
+    for (int pass = 0; pass < (keepOutside ? 2 : 1); ++pass)
+      for (int k = 0; k < nz; ++k)
+        for (int j = 0; j < ny; ++j)
+          for (int i = 0; i < nx; ++i)
+          {
+            const int owner = owners[grid.CellIndex(i, j, k)];
+            if ((owner >= 0) == (pass == 0))
+              f(i, j, k, owner);
+          }
   }
 
   /*!
@@ -131,7 +150,9 @@ void VoxelPlugin_Voxel_3D::removeMeshOnMainShape(SMESH_Mesh& aMesh)
     meshDS->RemoveNode(n); // removes the hexas of solids still using it
 }
 
-bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape)
+bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape,
+                                   VoxelPlugin_Classifier& classifier, VoxelPlugin_Grid& grid,
+                                   std::vector<int>& owners)
 {
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
@@ -146,39 +167,52 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
   if (mySolids.Extent() != mainSolids.Extent())
     return error(COMPERR_BAD_SHAPE, "Voxel_3D must be assigned to the main shape (all solids)");
 
-  const bool keepOutside = _hyp->GetKeepOutsideCells();
-  if (keepOutside && mainShape.ShapeType() != TopAbs_COMPOUND)
+  if (_hyp->GetKeepOutsideCells() && mainShape.ShapeType() != TopAbs_COMPOUND)
     return error(COMPERR_BAD_PARMETERS, "Keep outside cells requires a compound main shape");
 
+  switch (classifier.Init(mainShape))
+  {
+  case VoxelPlugin_Classifier::NO_SOLID:
+    return error(COMPERR_BAD_SHAPE,
+                 SMESH_Comment("No solid in the shape (shape type ") << shapeTypeName(mainShape.ShapeType()) << ")");
+  case VoxelPlugin_Classifier::OPEN_SOLID:
+    return error(COMPERR_BAD_SHAPE,
+                 SMESH_Comment("Solid #") << meshDS->ShapeToIndex(classifier.Solid(classifier.BadSolid()))
+                 << " is not closed");
+  case VoxelPlugin_Classifier::OK:
+    break;
+  }
+
+  double minC[3], maxC[3];
+  if (!VoxelPlugin_Classifier::BoundingBox(mainShape, minC, maxC))
+    return error(COMPERR_BAD_SHAPE, "Empty bounding box");
+  long long nb[3];
+  _hyp->NbCellsOfGrid(minC, maxC, nb);
+  if ((double)nb[0] * nb[1] * nb[2] > (double)VoxelPlugin_Grid::MaxNbCells)
+    return error(COMPERR_BAD_PARMETERS,
+                 SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
+                 << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
+  grid = _hyp->MakeGrid(minC, maxC);
+  owners = classifier.Classify(grid);
+  return true;
+}
+
+bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape)
+{
+  const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
+  SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
+
+  // also on failure: no stale outside cells of a previous compute
   removeMeshOnMainShape(aMesh);
 
   try
   {
     VoxelPlugin_Classifier classifier;
-    switch (classifier.Init(mainShape))
-    {
-    case VoxelPlugin_Classifier::NO_SOLID:
-      return error(COMPERR_BAD_SHAPE,
-                   SMESH_Comment("No solid in the shape (shape type ") << shapeTypeName(mainShape.ShapeType()) << ")");
-    case VoxelPlugin_Classifier::OPEN_SOLID:
-      return error(COMPERR_BAD_SHAPE,
-                   SMESH_Comment("Solid #") << meshDS->ShapeToIndex(classifier.Solid(classifier.BadSolid()))
-                   << " is not closed");
-    case VoxelPlugin_Classifier::OK:
-      break;
-    }
-
-    double minC[3], maxC[3];
-    if (!VoxelPlugin_Classifier::BoundingBox(mainShape, minC, maxC))
-      return error(COMPERR_BAD_SHAPE, "Empty bounding box");
-    long long nb[3];
-    _hyp->NbCellsOfGrid(minC, maxC, nb);
-    if ((double)nb[0] * nb[1] * nb[2] > (double)VoxelPlugin_Grid::MaxNbCells)
-      return error(COMPERR_BAD_PARMETERS,
-                   SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
-                   << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
-    const VoxelPlugin_Grid grid = _hyp->MakeGrid(minC, maxC);
-    const std::vector<int> owners = classifier.Classify(grid);
+    VoxelPlugin_Grid grid;
+    std::vector<int> owners;
+    if (!prepare(aMesh, aShape, classifier, grid, owners))
+      return false;
+    const bool keepOutside = _hyp->GetKeepOutsideCells();
 
     // shape index of each solid in the mesh
     std::vector<int> solidIndex(classifier.NbSolids());
@@ -199,38 +233,23 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
       }
       return n;
     };
-    auto addHexa = [&](int i, int j, int k, int shapeIndex)
+
+    std::vector<int> nbCellsOfSolid(classifier.NbSolids(), 0);
+    std::size_t nbOutside = 0;
+    forEachHexa(grid, owners, keepOutside, [&](int i, int j, int k, int owner)
     {
+      const int shapeIndex = owner < 0 ? mainIndex : solidIndex[owner];
       SMDS_MeshVolume* hexa = meshDS->AddVolume(
         node(i, j, k, shapeIndex),         node(i, j + 1, k, shapeIndex),
         node(i + 1, j + 1, k, shapeIndex), node(i + 1, j, k, shapeIndex),
         node(i, j, k + 1, shapeIndex),     node(i, j + 1, k + 1, shapeIndex),
         node(i + 1, j + 1, k + 1, shapeIndex), node(i + 1, j, k + 1, shapeIndex));
       meshDS->SetMeshElementOnShape(hexa, shapeIndex);
-    };
-
-    // owned cells first, then outside cells
-    std::vector<int> nbCellsOfSolid(classifier.NbSolids(), 0);
-    std::size_t nbOutside = 0;
-    for (int k = 0; k < nz; ++k)
-      for (int j = 0; j < ny; ++j)
-        for (int i = 0; i < nx; ++i)
-        {
-          const int owner = owners[grid.CellIndex(i, j, k)];
-          if (owner < 0)
-            ++nbOutside;
-          else
-          {
-            addHexa(i, j, k, solidIndex[owner]);
-            ++nbCellsOfSolid[owner];
-          }
-        }
-    if (keepOutside && nbOutside > 0)
-      for (int k = 0; k < nz; ++k)
-        for (int j = 0; j < ny; ++j)
-          for (int i = 0; i < nx; ++i)
-            if (owners[grid.CellIndex(i, j, k)] < 0)
-              addHexa(i, j, k, mainIndex);
+      if (owner < 0)
+        ++nbOutside;
+      else
+        ++nbCellsOfSolid[owner];
+    });
 
     // solids owning no cell must not fail the compute
     int nbEmpty = 0;
@@ -246,7 +265,7 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
       _EventListener::setAlwaysComputed(true, aMesh.GetSubMesh(soExp.Current()));
 
     SMESH_Comment warning;
-    if (keepOutside && nbOutside > 0)
+    if (nbOutside > 0)
       warning << nbOutside << " cell(s) outside all solids kept on the main shape. ";
     if (nbEmpty > 0)
       warning << nbEmpty << " solid(s) own no cell, refine the grid.";
@@ -264,10 +283,92 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
   }
 }
 
-bool VoxelPlugin_Voxel_3D::Evaluate(SMESH_Mesh& /*aMesh*/, const TopoDS_Shape& /*aShape*/,
-                                    MapShapeNbElems& /*aResMap*/)
+bool VoxelPlugin_Voxel_3D::Evaluate(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape,
+                                    MapShapeNbElems& aResMap)
 {
-  return true;
+  InitComputeError();
+
+  // SMESH evaluates solid by solid: gather the solids of this algorithm like Compute gets them,
+  // so that all of them are evaluated by the first call
+  TopoDS_Compound mySolids;
+  BRep_Builder builder;
+  builder.MakeCompound(mySolids);
+  for (TopExp_Explorer solid(aMesh.GetShapeToMesh(), TopAbs_SOLID); solid.More(); solid.Next())
+    if (aMesh.GetSubMesh(solid.Current())->GetAlgo() == this)
+      builder.Add(mySolids, solid.Current());
+
+  // no mesh on faces, edges and vertices (SMESH counts one node per vertex otherwise)
+  const std::vector<smIdType> none(SMDSEntity_Last, 0);
+  for (TopExp_Explorer solid(mySolids, TopAbs_SOLID); solid.More(); solid.Next())
+  {
+    SMESH_subMeshIteratorPtr smIt = aMesh.GetSubMesh(solid.Current())
+      ->getDependsOnIterator(/*includeSelf=*/false, /*complexShapeFirst=*/false);
+    while (smIt->more())
+      aResMap[smIt->next()] = none;
+  }
+
+  bool ok = false;
+  try
+  {
+    VoxelPlugin_Classifier classifier;
+    VoxelPlugin_Grid grid;
+    std::vector<int> owners;
+    if (prepare(aMesh, mySolids, classifier, grid, owners))
+    {
+      // same creation order as Compute: a node belongs to the shape of its first hexa
+      const int nbSolids = classifier.NbSolids(), mainSlot = nbSolids;
+      std::vector<smIdType> nbNodes(nbSolids + 1, 0), nbHexas(nbSolids + 1, 0);
+      std::vector<int> nodeSlot((std::size_t)(grid.NbCells(0) + 1) * (grid.NbCells(1) + 1) *
+                                (grid.NbCells(2) + 1), -1);
+      forEachHexa(grid, owners, _hyp->GetKeepOutsideCells(), [&](int i, int j, int k, int owner)
+      {
+        const int slot = owner < 0 ? mainSlot : owner;
+        ++nbHexas[slot];
+        for (int dk = 0; dk < 2; ++dk)
+          for (int dj = 0; dj < 2; ++dj)
+            for (int di = 0; di < 2; ++di)
+            {
+              int& n = nodeSlot[grid.NodeIndex(i + di, j + dj, k + dk)];
+              if (n < 0)
+              {
+                n = slot;
+                ++nbNodes[slot];
+              }
+            }
+      });
+      for (int slot = 0; slot <= nbSolids; ++slot)
+      {
+        if (slot == mainSlot && nbHexas[slot] == 0)
+          continue;
+        std::vector<smIdType> nbEntities = none;
+        nbEntities[SMDSEntity_Node] = nbNodes[slot];
+        nbEntities[SMDSEntity_Hexa] = nbHexas[slot];
+        const TopoDS_Shape& shape = slot == mainSlot ? aMesh.GetShapeToMesh() : classifier.Solid(slot);
+        aResMap[aMesh.GetSubMesh(shape)] = nbEntities;
+      }
+      ok = true;
+    }
+  }
+  catch (const Standard_Failure& ex)
+  {
+    error(COMPERR_OCC_EXCEPTION, ex.GetMessageString());
+  }
+  catch (const std::exception& ex)
+  {
+    error(COMPERR_STD_EXCEPTION, ex.what());
+  }
+  if (!ok)
+  {
+    // the other solids are not evaluated again; SMESH would reset an error stored on them
+    for (TopExp_Explorer solid(mySolids, TopAbs_SOLID); solid.More(); solid.Next())
+      aResMap[aMesh.GetSubMesh(solid.Current())] = none;
+    // a negative count makes SMESH_Gen_i::Evaluate report "Failed to evaluate"; our own
+    // message cannot reach it, SMESH_Gen::Evaluate resets sub-mesh errors in its last pass
+    std::vector<smIdType> failed = none;
+    failed[SMDSEntity_Node] = -1;
+    aResMap[aMesh.GetSubMesh(aShape)] = failed;
+  }
+  return ok;
 }
 
 void VoxelPlugin_Voxel_3D::SetEventListener(SMESH_subMesh* subMesh)
