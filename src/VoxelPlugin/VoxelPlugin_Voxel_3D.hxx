@@ -10,6 +10,7 @@
 #include <SMESH_Algo.hxx>
 
 #include <atomic>
+#include <string>
 #include <vector>
 
 class VoxelPlugin_Classifier;
@@ -48,6 +49,7 @@ private:
   const VoxelPlugin_Hypothesis* _hyp;
   std::atomic<int>              _nbDoneSlabs; //!< classified k-slabs of the current compute
   int                           _nbSlabs;
+  std::string                   _coverageWarning; //!< set by prepare(): grid planes not covering the solids
 };
 
 #endif

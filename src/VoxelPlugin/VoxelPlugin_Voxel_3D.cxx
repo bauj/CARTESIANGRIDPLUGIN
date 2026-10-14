@@ -160,6 +160,7 @@ bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& cl
                                    VoxelPlugin_Grid& grid, std::vector<int>& owners,
                                    std::size_t* nbUnknown, bool forCompute)
 {
+  _coverageWarning.clear();
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
 
@@ -199,6 +200,7 @@ bool VoxelPlugin_Voxel_3D::prepare(SMESH_Mesh& aMesh, VoxelPlugin_Classifier& cl
                  SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
                  << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
   grid = _hyp->MakeGrid(minC, maxC);
+  _coverageWarning = _hyp->CoverageWarning(grid, minC, maxC);
   if (forCompute)
   {
     _nbDoneSlabs = 0;
@@ -308,6 +310,7 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
       aMesh.GetSubMesh(solidsLeftOut(i))->ComputeStateEngine(SMESH_subMesh::CHECK_COMPUTE_STATE);
 
     SMESH_Comment warning;
+    warning << _coverageWarning;
     if (nbOutside > 0)
       warning << nbOutside << " cell(s) outside all solids kept on the main shape. ";
     if (nbEmpty > 0)
