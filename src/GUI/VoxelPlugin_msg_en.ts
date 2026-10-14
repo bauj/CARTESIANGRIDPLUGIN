@@ -14,6 +14,7 @@
     <message><source>VOXEL_MODE</source><translation>Mode</translation></message>
     <message><source>VOXEL_NB_CELLS</source><translation>Nb cells</translation></message>
     <message><source>VOXEL_STEP</source><translation>Step</translation></message>
+    <message><source>VOXEL_PASTE_NO_NUMBERS</source><translation>Paste: the clipboard does not hold a list of numbers</translation></message>
     <message><source>VOXEL_COORDINATES</source><translation>Coordinates</translation></message>
     <message><source>VOXEL_SPACING</source><translation>Spacing</translation></message>
     <message><source>VOXEL_COORDINATES_TIP</source><translation>Absolute node coordinates along the axis, kept sorted. Double-click a value to edit it.</translation></message>

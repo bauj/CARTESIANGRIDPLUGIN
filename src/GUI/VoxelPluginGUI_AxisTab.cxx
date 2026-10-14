@@ -328,9 +328,10 @@ void VoxelPluginGUI_AxisTab::onPasteCoordinates()
 {
   std::vector<double> pasted;
   std::string error;
-  if (!VoxelPlugin_GridText::ParseNumbers(QApplication::clipboard()->text().toStdString(), pasted, error))
+  if (!VoxelPlugin_GridText::ParseNumbers(QApplication::clipboard()->text().toStdString(), pasted, error) ||
+      pasted.empty())
   {
-    myMessage->setText(QString::fromStdString(error));
+    myMessage->setText(tr("VOXEL_PASTE_NO_NUMBERS"));
     return;
   }
   std::vector<double> c(myCoords);
