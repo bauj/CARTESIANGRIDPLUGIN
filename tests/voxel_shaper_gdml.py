@@ -60,4 +60,13 @@ for g in geomGroups:
 expected = {"MAT_AIR": 7360, "MAT_IRON": 504, "MAT_LEAD": 8, "MAT_WOOD": 128}
 assert counts == expected, counts
 assert sum(counts.values()) == mesh.NbHexas() == 8000, mesh.NbHexas()
+
+# Cartesian MED export from the SHAPERSTUDY geometry groups: same counts
+import os, tempfile
+import medcoupling as mc
+from salome.VoxelPlugin import VoxelPluginBuilder
+f = os.path.join(tempfile.mkdtemp(), "world.med")
+summary = VoxelPluginBuilder.ExportCartesianMED(mesh, f)
+m = mc.MEDFileMesh.New(f)
+assert {g: m.getGroupArr(0, g).getNumberOfTuples() for g in m.getGroupsNames()} == expected, summary
 print("OK")
