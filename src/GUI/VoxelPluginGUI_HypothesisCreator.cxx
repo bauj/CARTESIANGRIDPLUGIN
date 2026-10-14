@@ -118,7 +118,7 @@ void VoxelPluginGUI_HypothesisCreator::updateActualSteps()
       myActualStep[a]->setText("-");
       continue;
     }
-    const int n = myMode[a]->currentIndex() == 1
+    const long long n = myMode[a]->currentIndex() == 1
       ? VoxelPlugin_Grid::NbCellsForStep(myExtent[a], myStep[a]->GetValue())
       : myNbCells[a]->value();
     myActualStep[a]->setText(QString("%1 (%2)").arg(myExtent[a] / n, 0, 'g', 6).arg(n));

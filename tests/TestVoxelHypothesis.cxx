@@ -39,6 +39,15 @@ int main()
   VoxelPlugin_Grid g = h.MakeGrid(mn, mx);
   CHECK(g.NbCells(0) == 4 && g.NbCells(1) == 3 && g.NbCells(2) == 1);
   CHECK(g.coords[1].back() == 10. && std::abs(g.coords[1][1] - 10. / 3.) < 1e-12);
+  long long nb[3];
+  h.NbCellsOfGrid(mn, mx, nb);
+  CHECK(nb[0] == 4 && nb[1] == 3 && nb[2] == 1);
+  {
+    VoxelPlugin_Hypothesis tiny(2, nullptr);
+    tiny.SetStep(0, 1e-12);
+    tiny.NbCellsOfGrid(mn, mx, nb);
+    CHECK(nb[0] == VoxelPlugin_Grid::MaxNbCells + 1);
+  }
 
   // validation
   CHECK(throws([&] { h.SetNbCells(3, 5); }));

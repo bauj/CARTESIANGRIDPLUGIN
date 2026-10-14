@@ -58,6 +58,9 @@ static void gridHelpers()
   CHECK(VoxelPlugin_Grid::NbCellsForStep(10., 3.) == 3);
   CHECK(VoxelPlugin_Grid::NbCellsForStep(10., 30.) == 1);
   CHECK(VoxelPlugin_Grid::NbCellsForStep(10., 0.) == 1);
+  // tiny step saturates instead of overflowing
+  CHECK(VoxelPlugin_Grid::NbCellsForStep(1e9, 1e-9) == VoxelPlugin_Grid::MaxNbCells + 1);
+  CHECK(VoxelPlugin_Grid::NbCellsForStep(1., 1e-300) == VoxelPlugin_Grid::MaxNbCells + 1);
   const double mn[3] = { 0, 0, 0 }, mx[3] = { 3, 2, 1 };
   VoxelPlugin_Grid g = uniformGrid(mn, mx, 3, 2, 1);
   CHECK(g.NbCells() == 6);

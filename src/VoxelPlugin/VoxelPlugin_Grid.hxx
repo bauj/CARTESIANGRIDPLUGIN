@@ -45,12 +45,19 @@ struct VoxelPlugin_Grid
     return c;
   }
 
-  //! number of cells giving a spacing closest to the wished step: max(1, round(extent/step))
-  static int NbCellsForStep(double extent, double step)
+  //! upper limit on the total number of cells of a grid (~76 GB of SMDS hexahedra)
+  static constexpr long long MaxNbCells = 100000000LL;
+
+  //! number of cells giving a spacing closest to the wished step: max(1, round(extent/step)),
+  //! saturated to MaxNbCells + 1 so that a tiny step cannot overflow
+  static long long NbCellsForStep(double extent, double step)
   {
-    if (step <= 0.)
+    if (!(step > 0.))
       return 1;
-    return std::max(1, (int)std::lround(extent / step));
+    const double n = std::round(extent / step);
+    if (!(n <= (double)MaxNbCells)) // also catches inf and nan
+      return MaxNbCells + 1;
+    return std::max(1LL, (long long)n);
   }
 };
 

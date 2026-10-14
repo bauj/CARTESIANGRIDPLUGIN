@@ -171,6 +171,12 @@ bool VoxelPlugin_Voxel_3D::Compute(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape
     double minC[3], maxC[3];
     if (!VoxelPlugin_Classifier::BoundingBox(mainShape, minC, maxC))
       return error(COMPERR_BAD_SHAPE, "Empty bounding box");
+    long long nb[3];
+    _hyp->NbCellsOfGrid(minC, maxC, nb);
+    if ((double)nb[0] * nb[1] * nb[2] > (double)VoxelPlugin_Grid::MaxNbCells)
+      return error(COMPERR_BAD_PARMETERS,
+                   SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
+                   << " cells exceeds the limit of " << VoxelPlugin_Grid::MaxNbCells << " cells");
     const VoxelPlugin_Grid grid = _hyp->MakeGrid(minC, maxC);
     const std::vector<int> owners = classifier.Classify(grid);
 

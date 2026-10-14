@@ -41,4 +41,11 @@ m = smesh.Mesh(two, "OnSubShape")
 m.Voxel(geom=s1).Grid(nbCells=4)
 ok, msg = compute_error(m)
 assert not ok and "main shape" in msg, msg
+
+# tiny step: error instead of overflow or memory exhaustion
+m = smesh.Mesh(two, "TooManyCells")
+m.Voxel().Grid(step=1e-9)
+ok, msg = compute_error(m)
+assert not ok and "exceeds the limit" in msg, msg
+assert m.NbElements() == 0
 print("OK")

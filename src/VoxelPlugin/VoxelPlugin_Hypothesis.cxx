@@ -81,16 +81,21 @@ void VoxelPlugin_Hypothesis::SetKeepOutsideCells(bool keep)
   }
 }
 
+void VoxelPlugin_Hypothesis::NbCellsOfGrid(const double theMin[3], const double theMax[3],
+                                           long long theNb[3]) const
+{
+  for (int a = 0; a < 3; ++a)
+    theNb[a] = myMode[a] == STEP ? VoxelPlugin_Grid::NbCellsForStep(theMax[a] - theMin[a], myStep[a])
+                                 : myNbCells[a];
+}
+
 VoxelPlugin_Grid VoxelPlugin_Hypothesis::MakeGrid(const double theMin[3], const double theMax[3]) const
 {
+  long long nb[3];
+  NbCellsOfGrid(theMin, theMax, nb);
   VoxelPlugin_Grid grid;
   for (int a = 0; a < 3; ++a)
-  {
-    const double extent = theMax[a] - theMin[a];
-    const int n = myMode[a] == STEP ? VoxelPlugin_Grid::NbCellsForStep(extent, myStep[a])
-                                    : myNbCells[a];
-    grid.coords[a] = VoxelPlugin_Grid::UniformAxis(theMin[a], theMax[a], n);
-  }
+    grid.coords[a] = VoxelPlugin_Grid::UniformAxis(theMin[a], theMax[a], (int)nb[a]);
   return grid;
 }
 

@@ -29,7 +29,11 @@ public:
   void SetKeepOutsideCells(bool keep);
   bool GetKeepOutsideCells() const { return myKeepOutside; }
 
-  //! Grid covering [theMin, theMax] exactly
+  //! Number of cells per axis of the grid covering [theMin, theMax]
+  void NbCellsOfGrid(const double theMin[3], const double theMax[3], long long theNb[3]) const;
+
+  //! Grid covering [theMin, theMax] exactly; check NbCellsOfGrid() against
+  //! VoxelPlugin_Grid::MaxNbCells first
   VoxelPlugin_Grid MakeGrid(const double theMin[3], const double theMax[3]) const;
 
   std::ostream& SaveTo(std::ostream& save) override;
