@@ -34,6 +34,7 @@ SET(_link_LIBRARIES
   ${GUI_SalomeApp}
   ${OpenCASCADE_FoundationClasses_LIBRARIES}
   VoxelCore
+  VoxelEngine
   SalomeIDLVOXELPLUGIN
 )
 

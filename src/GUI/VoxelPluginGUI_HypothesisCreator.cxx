@@ -4,6 +4,10 @@
 
 #include "VoxelPlugin_Classifier.hxx"
 #include "VoxelPlugin_Grid.hxx"
+#include "VoxelPlugin_GridText.hxx"
+#include "VoxelPlugin_Hypothesis.hxx"
+
+#include <Utils_SALOME_Exception.hxx>
 
 #include <GEOMBase.h>
 #include <SMESHGUI_SpinBox.h>
@@ -24,6 +28,8 @@
 #include <QLineEdit>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 namespace
 {
@@ -63,7 +69,8 @@ QFrame* VoxelPluginGUI_HypothesisCreator::buildFrame()
   {
     g->addWidget(new QLabel(axisNames[a], gb), row, 0);
     myMode[a] = new QComboBox(gb);
-    myMode[a]->addItems(QStringList() << tr("VOXEL_NB_CELLS") << tr("VOXEL_STEP"));
+    myMode[a]->addItems(QStringList() << tr("VOXEL_NB_CELLS") << tr("VOXEL_STEP")
+                                      << tr("VOXEL_COORDINATES") << tr("VOXEL_SPACING"));
     g->addWidget(myMode[a], row, 1);
 
     myValueStack[a] = new QStackedWidget(gb);
@@ -71,8 +78,14 @@ QFrame* VoxelPluginGUI_HypothesisCreator::buildFrame()
     myNbCells[a]->setRange(1, 100000);
     myStep[a] = new SMESHGUI_SpinBox(gb);
     myStep[a]->RangeStepAndValidator(1e-12, 1e12, 1., "length_precision");
+    myCoords[a] = new QLineEdit(gb);
+    myCoords[a]->setToolTip(tr("VOXEL_COORDINATES_TIP"));
+    mySpacing[a] = new QLineEdit(gb);
+    mySpacing[a]->setToolTip(tr("VOXEL_SPACING_TIP"));
     myValueStack[a]->addWidget(myNbCells[a]);
     myValueStack[a]->addWidget(myStep[a]);
+    myValueStack[a]->addWidget(myCoords[a]);
+    myValueStack[a]->addWidget(mySpacing[a]);
     g->addWidget(myValueStack[a], row, 2);
 
     myActualStep[a] = new QLabel(gb);
@@ -82,6 +95,8 @@ QFrame* VoxelPluginGUI_HypothesisCreator::buildFrame()
     connect(myMode[a], SIGNAL(currentIndexChanged(int)), this, SLOT(updateActualSteps()));
     connect(myNbCells[a], SIGNAL(valueChanged(int)), this, SLOT(updateActualSteps()));
     connect(myStep[a], SIGNAL(valueChanged(double)), this, SLOT(updateActualSteps()));
+    connect(myCoords[a], SIGNAL(textChanged(const QString&)), this, SLOT(updateActualSteps()));
+    connect(mySpacing[a], SIGNAL(textChanged(const QString&)), this, SLOT(updateActualSteps()));
   }
 
   g->addWidget(new QLabel(tr("VOXEL_OUTSIDE_CELLS"), gb), row, 0, 1, 2);
@@ -109,16 +124,59 @@ QFrame* VoxelPluginGUI_HypothesisCreator::buildFrame()
   return fr;
 }
 
+bool VoxelPluginGUI_HypothesisCreator::textCoordinates(int a, std::vector<double>& theCoords,
+                                                       std::string& theError) const
+{
+  if (myMode[a]->currentIndex() == VoxelPlugin_Hypothesis::COORDINATES)
+    return VoxelPlugin_GridText::ParseCoordinates(myCoords[a]->text().toStdString(), theCoords, theError) &&
+           VoxelPlugin_Grid::SortAndCheckCoordinates(theCoords, theError);
+  std::vector<std::string> functions;
+  std::vector<double> points;
+  if (!VoxelPlugin_GridText::ParseSpacing(mySpacing[a]->text().toStdString(), functions, points, theError))
+    return false;
+  try
+  {
+    theCoords = VoxelPlugin_Hypothesis::SpacingCoordinates(0., myHasExtent ? myExtent[a] : 1.,
+                                                           functions, points, a);
+  }
+  catch (const SALOME_Exception& ex)
+  {
+    theError = ex.what();
+    return false;
+  }
+  return true;
+}
+
 void VoxelPluginGUI_HypothesisCreator::updateActualSteps()
 {
   for (int a = 0; a < 3; ++a)
   {
+    const int mode = myMode[a]->currentIndex();
+    if (mode >= VoxelPlugin_Hypothesis::COORDINATES)
+    {
+      std::vector<double> c;
+      std::string error;
+      if ((mode == VoxelPlugin_Hypothesis::SPACING && !myHasExtent) || !textCoordinates(a, c, error))
+      {
+        myActualStep[a]->setText("-");
+        continue;
+      }
+      double dmin = c[1] - c[0], dmax = dmin;
+      for (std::size_t i = 2; i < c.size(); ++i)
+      {
+        dmin = std::min(dmin, c[i] - c[i - 1]);
+        dmax = std::max(dmax, c[i] - c[i - 1]);
+      }
+      myActualStep[a]->setText(QString("%1..%2 (%3)").arg(dmin, 0, 'g', 6).arg(dmax, 0, 'g', 6)
+                                                     .arg(c.size() - 1));
+      continue;
+    }
     if (!myHasExtent)
     {
       myActualStep[a]->setText("-");
       continue;
     }
-    const long long n = myMode[a]->currentIndex() == 1
+    const long long n = mode == VoxelPlugin_Hypothesis::STEP
       ? VoxelPlugin_Grid::NbCellsForStep(myExtent[a], myStep[a]->GetValue())
       : myNbCells[a]->value();
     myActualStep[a]->setText(QString("%1 (%2)").arg(myExtent[a] / n, 0, 'g', 6).arg(n));
@@ -136,6 +194,21 @@ void VoxelPluginGUI_HypothesisCreator::retrieveParams() const
     const int mode = h->GetMode(a);
     myNbCells[a]->setValue(h->GetNbCells(a));
     myStep[a]->SetValue(h->GetStep(a));
+    SMESH::double_array_var coords = h->GetCoordinates(a);
+    std::vector<double> c(coords->length());
+    for (CORBA::ULong i = 0; i < coords->length(); ++i)
+      c[i] = coords[i];
+    myCoords[a]->setText(QString::fromStdString(VoxelPlugin_GridText::FormatCoordinates(c)));
+    SMESH::string_array_var funs;
+    SMESH::double_array_var points;
+    h->GetSpacing(a, funs.out(), points.out());
+    std::vector<std::string> f;
+    for (CORBA::ULong i = 0; i < funs->length(); ++i)
+      f.push_back(funs[i].in());
+    std::vector<double> p(points->length());
+    for (CORBA::ULong i = 0; i < points->length(); ++i)
+      p[i] = points[i];
+    mySpacing[a]->setText(QString::fromStdString(VoxelPlugin_GridText::FormatSpacing(f, p)));
     myMode[a]->setCurrentIndex(mode);
     myValueStack[a]->setCurrentIndex(mode);
   }
@@ -152,7 +225,36 @@ QString VoxelPluginGUI_HypothesisCreator::storeParams() const
   QString text;
   for (int a = 0; a < 3; ++a)
   {
-    if (myMode[a]->currentIndex() == 1)
+    const int mode = myMode[a]->currentIndex();
+    std::string error;
+    if (mode == VoxelPlugin_Hypothesis::COORDINATES)
+    {
+      std::vector<double> c;
+      VoxelPlugin_GridText::ParseCoordinates(myCoords[a]->text().toStdString(), c, error); // checked
+      SMESH::double_array_var coords = new SMESH::double_array;
+      coords->length((CORBA::ULong)c.size());
+      for (std::size_t i = 0; i < c.size(); ++i)
+        coords[(CORBA::ULong)i] = c[i];
+      h->SetCoordinates(a, coords);
+      text += QString("%1: %2 coordinates; ").arg(axisNames[a]).arg(c.size());
+    }
+    else if (mode == VoxelPlugin_Hypothesis::SPACING)
+    {
+      std::vector<std::string> f;
+      std::vector<double> p;
+      VoxelPlugin_GridText::ParseSpacing(mySpacing[a]->text().toStdString(), f, p, error); // checked
+      SMESH::string_array_var funs = new SMESH::string_array;
+      funs->length((CORBA::ULong)f.size());
+      for (std::size_t i = 0; i < f.size(); ++i)
+        funs[(CORBA::ULong)i] = CORBA::string_dup(f[i].c_str());
+      SMESH::double_array_var points = new SMESH::double_array;
+      points->length((CORBA::ULong)p.size());
+      for (std::size_t i = 0; i < p.size(); ++i)
+        points[(CORBA::ULong)i] = p[i];
+      h->SetSpacing(a, funs, points);
+      text += QString("%1: spacing %2; ").arg(axisNames[a]).arg(mySpacing[a]->text());
+    }
+    else if (mode == VoxelPlugin_Hypothesis::STEP)
     {
       h->SetStep(a, myStep[a]->GetValue());
       text += QString("%1: step %2; ").arg(axisNames[a]).arg(myStep[a]->GetValue());
@@ -170,11 +272,21 @@ QString VoxelPluginGUI_HypothesisCreator::storeParams() const
 bool VoxelPluginGUI_HypothesisCreator::checkParams(QString& msg) const
 {
   for (int a = 0; a < 3; ++a)
-    if (myMode[a]->currentIndex() == 1 && !(myStep[a]->GetValue() > 0.))
+  {
+    const int mode = myMode[a]->currentIndex();
+    if (mode == VoxelPlugin_Hypothesis::STEP && !(myStep[a]->GetValue() > 0.))
     {
       msg = tr("VOXEL_BAD_STEP");
       return false;
     }
+    std::vector<double> c;
+    std::string error;
+    if (mode >= VoxelPlugin_Hypothesis::COORDINATES && !textCoordinates(a, c, error))
+    {
+      msg = QString("%1: %2").arg(axisNames[a]).arg(QString::fromStdString(error));
+      return false;
+    }
+  }
   return true;
 }
 
