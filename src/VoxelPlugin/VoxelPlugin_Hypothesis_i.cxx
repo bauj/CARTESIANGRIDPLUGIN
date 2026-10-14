@@ -2,6 +2,8 @@
 // LGPL 2.1 or later
 #include "VoxelPlugin_Hypothesis_i.hxx"
 
+#include "VoxelPlugin_GridText.hxx"
+
 #include "SMESH_Gen.hxx"
 #include "SMESH_PythonDump.hxx"
 
@@ -44,7 +46,8 @@ void VoxelPlugin_Hypothesis_i::SetStep(CORBA::Short axis, CORBA::Double step)
   catch (SALOME_Exception& ex) {
     THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::BAD_PARAM);
   }
-  SMESH::TPythonDump() << _this() << ".SetStep( " << axis << ", " << step << " )";
+  SMESH::TPythonDump() << _this() << ".SetStep( " << axis << ", "
+                       << VoxelPlugin_GridText::FormatNumber(step).c_str() << " )"; // full precision
 }
 
 CORBA::Short VoxelPlugin_Hypothesis_i::GetMode(CORBA::Short axis)
@@ -94,7 +97,7 @@ void VoxelPlugin_Hypothesis_i::SetCoordinates(CORBA::Short axis, const VoxelPlug
   SMESH::TPythonDump dump;
   dump << _this() << ".SetCoordinates( " << axis << ", [ ";
   for (CORBA::ULong i = 0; i < coords.length(); ++i)
-    dump << (i ? ", " : "") << coords[i];
+    dump << (i ? ", " : "") << VoxelPlugin_GridText::FormatNumber(coords[i]).c_str();
   dump << " ] )";
 }
 
@@ -134,7 +137,7 @@ void VoxelPlugin_Hypothesis_i::SetSpacing(CORBA::Short axis, const VoxelPlugin::
     dump << (i ? ", " : "") << "'" << functions[i].in() << "'";
   dump << " ], [ ";
   for (CORBA::ULong i = 0; i < internalPoints.length(); ++i)
-    dump << (i ? ", " : "") << internalPoints[i];
+    dump << (i ? ", " : "") << VoxelPlugin_GridText::FormatNumber(internalPoints[i]).c_str();
   dump << " ] )";
 }
 

@@ -55,8 +55,9 @@ assert mesh.NbHexas() == 2 * 4 * (len(zs) - 1), mesh.NbHexas()
 assert any("X planes cover [0, 5], solids span [0, 10]" in w for w in warnings(mesh)), warnings(mesh)
 assert max(node_coords(mesh, 0)) == 5
 
-# back to the full mixed grid for the dump
-hyp.SetCoordinates(0, [0, 2, 5, 10])
+# back to the full mixed grid for the dump, with values needing full precision
+hyp.SetCoordinates(0, [0, 1.2345678901234567, 5, 10])
+hyp.SetSpacing(2, ["0.5", "2"], [0.123456789012])
 assert mesh.Compute()
 
 # Dump Study replays the new setters
@@ -67,10 +68,10 @@ assert ".SetCoordinates(" in script and ".SetSpacing(" in script, script
 namespace = {"__name__": "__main__"}
 exec(compile(script, "grid_modes_dump.py", "exec"), namespace)
 replayed = [v for v in namespace.values() if isinstance(v, VoxelPlugin._objref_VoxelPlugin_Hypothesis)]
-assert any(r.GetMode(0) == 2 and list(r.GetCoordinates(0)) == [0, 2, 5, 10] and
+assert any(r.GetMode(0) == 2 and list(r.GetCoordinates(0)) == [0, 1.2345678901234567, 5, 10] and
            r.GetMode(1) == 1 and r.GetStep(1) == 2.5 and
            r.GetMode(2) == 3 and list(r.GetSpacing(2)[0]) == ["0.5", "2"] and
-           list(r.GetSpacing(2)[1]) == [0.5]
+           list(r.GetSpacing(2)[1]) == [0.123456789012]
            for r in replayed), [(r.GetMode(0), r.GetMode(1), r.GetMode(2)) for r in replayed]
 
 # planes entirely outside the solids: compute OK, no cell, both warnings
