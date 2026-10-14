@@ -175,4 +175,29 @@ text = raises(SALOME.SALOME_Exception, algo2.ExportCartesianMED, os.path.join(tm
               source="mesh")
 assert "not computed" in text, text
 assert not os.path.exists(os.path.join(tmp, "y.med"))
+
+# ---- review fixes
+# overlap of geometry zone groups is found before classifying the grid: no slab classified
+voxelWorld = VoxelPluginBuilder.VoxelAlgorithm(mesh)
+raises(SALOME.SALOME_Exception, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), zonePrefix="")
+assert voxelWorld.GetExportProgress() == 0., voxelWorld.GetExportProgress()
+
+# warnings of Compute are in the summary: grid planes not covering the solids
+mesh5 = smesh.Mesh(world, "HalfX")
+algo5 = mesh5.Voxel()
+algo5.Grid(nbCells=4, coordinates=[[-100, 0], None, None])
+summary = algo5.ExportCartesianMED(os.path.join(tmp, "half.med"))
+assert "X planes cover" in summary, summary
+
+# mesh source on a study saved and reopened (SMESH loads mesh data lazily)
+fStudy = os.path.join(tmp, "study.hdf")
+assert salome.myStudy.SaveAs(fStudy, False, False)
+salome.myStudy.Clear()
+salome.myStudy.Init()
+assert salome.myStudy.Open(fStudy)
+smesh = smeshBuilder.New()
+salome.myStudy.NewBuilder().LoadWith(salome.myStudy.FindComponent("SMESH"), smesh)
+reopened = salome.myStudy.FindObjectByName("World", "SMESH")[0].GetObject()._narrow(SMESH.SMESH_Mesh)
+summary = VoxelPluginBuilder.ExportCartesianMED(reopened, os.path.join(tmp, "reopened.med"), source="mesh")
+assert "MAT_IRON: 504 cells" in summary, summary
 print("OK")

@@ -460,16 +460,16 @@ std::string VoxelPlugin_Voxel_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const st
   VoxelPlugin_Classifier classifier;
   VoxelPlugin_Grid grid;
   std::vector<int> owners;
-  if (!prepare(aMesh, classifier, grid, owners, nullptr, /*forCompute=*/!fromMesh, /*classify=*/!fromMesh))
+  if (!prepare(aMesh, classifier, grid, owners, nullptr, /*forCompute=*/false, /*classify=*/false))
     throw SALOME_Exception(_comment.c_str());
-  if (_computeCanceled)
-    throw SALOME_Exception("Export canceled");
 
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
   std::vector<int> zoneOfCell(grid.NbCells(), 0);
   std::vector<int> solidsWithoutZone;
+  std::size_t nbUnknown = 0;
   if (!fromMesh)
   {
+    // zones of the solids first: an overlap is reported before the long classification
     std::vector<int> zoneOfSolid(classifier.NbSolids(), 0);
     for (int s = 0; s < classifier.NbSolids(); ++s)
     {
@@ -485,6 +485,10 @@ std::string VoxelPlugin_Voxel_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const st
       if (!zoneOfSolid[s])
         solidsWithoutZone.push_back(id);
     }
+    _nbSlabs = grid.NbCells(2);
+    owners = classifier.Classify(grid, /*theNbThreads=*/0, &nbUnknown, &_computeCanceled, &_nbDoneSlabs);
+    if (_computeCanceled)
+      throw SALOME_Exception("Export canceled");
     for (std::size_t c = 0; c < owners.size(); ++c)
       zoneOfCell[c] = owners[c] < 0 ? 0 : zoneOfSolid[owners[c]];
   }
@@ -520,6 +524,11 @@ std::string VoxelPlugin_Voxel_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const st
       summary << (i ? ", #" : " #") << solidsWithoutZone[i];
     summary << "\n";
   }
+  if (!_coverageWarning.empty())
+    summary << "  warning: " << _coverageWarning << "\n";
+  if (nbUnknown > 0)
+    summary << "  warning: " << nbUnknown << " cell center(s) could not be located in a solid and"
+            << " were taken as outside it, check the geometry\n";
   return summary.str();
 }
 

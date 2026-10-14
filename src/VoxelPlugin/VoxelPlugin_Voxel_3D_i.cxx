@@ -6,6 +6,8 @@
 #include "SMESH_Gen_i.hxx"
 #include "SMESH_Mesh_i.hxx"
 
+#include <Standard_Failure.hxx>
+
 #include <SALOMEDS_wrap.hxx>
 #include <Utils_CorbaException.hxx>
 #include <Utils_SALOME_Exception.hxx>
@@ -37,6 +39,7 @@ char* VoxelPlugin_Voxel_3D_i::ExportCartesianMED(SMESH::SMESH_Mesh_ptr     mesh,
   SMESH_Mesh_i* meshI = SMESH::DownCast<SMESH_Mesh_i*>(mesh);
   if (!meshI)
     THROW_SALOME_CORBA_EXCEPTION("Not a mesh of this session", SALOME::BAD_PARAM);
+  meshI->Load();   // data of a mesh of a reopened study are loaded on demand
   std::string meshName = "Mesh";
   SALOMEDS::SObject_wrap so = SMESH_Gen_i::GetSMESHGen()->ObjectToSObject(mesh);
   if (!so->_is_nil())
@@ -62,6 +65,14 @@ char* VoxelPlugin_Voxel_3D_i::ExportCartesianMED(SMESH::SMESH_Mesh_ptr     mesh,
   catch (const std::exception& ex)
   {
     THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::INTERNAL_ERROR);
+  }
+  catch (const Standard_Failure& ex)  // OCC failure of the classification
+  {
+    THROW_SALOME_CORBA_EXCEPTION(ex.GetMessageString(), SALOME::INTERNAL_ERROR);
+  }
+  catch (...)
+  {
+    THROW_SALOME_CORBA_EXCEPTION("Unknown error during the Cartesian MED export", SALOME::INTERNAL_ERROR);
   }
   return nullptr;
 }
