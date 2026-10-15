@@ -261,6 +261,32 @@ bool CartesianGridPluginGUI_AxisTab::Check(std::string& theError) const
 void CartesianGridPluginGUI_AxisTab::onMode(int theMode)
 {
   myStack->setCurrentIndex(theMode);
+  // the stack takes the size of the current page only (hidden pages ignored), so Nb cells and Step stay
+  // compact; the axis tabs then take the tallest current mode of the three axes, and the window follows
+  for (int i = 0; i < myStack->count(); ++i)
+  {
+    QSizePolicy::Policy policy = i == theMode ? QSizePolicy::Preferred : QSizePolicy::Ignored;
+    myStack->widget(i)->setSizePolicy(policy, policy);
+  }
+  // drop the cached size hints from the stack up to the window, then fit the window to the new ones
+  QWidget* win = 0;
+  for (QWidget* w = myStack; w; w = w->parentWidget())
+  {
+    if (w->layout())
+      w->layout()->invalidate();
+    w->updateGeometry();
+    if (w->isWindow())
+    {
+      win = w;
+      break;
+    }
+  }
+  if (win && win != this && win->isVisible())
+  {
+    if (win->layout())
+      win->layout()->activate();
+    win->adjustSize();
+  }
   myMessage->clear();
   updateButtons();
   updateActual();
