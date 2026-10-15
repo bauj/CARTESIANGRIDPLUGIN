@@ -40,6 +40,7 @@ SET(_link_LIBRARIES
 
 SET(_moc_HEADERS
   CartesianGridPluginGUI_AxisTab.h
+  CartesianGridPluginGUI_GridPanel.h
   CartesianGridPluginGUI_HypothesisCreator.h
 )
 
@@ -48,7 +49,9 @@ QT_WRAP_MOC(_moc_SOURCES ${_moc_HEADERS})
 SET(CartesianGridPluginGUI_SOURCES
   CartesianGridPluginGUI.cxx
   CartesianGridPluginGUI_AxisTab.cxx
+  CartesianGridPluginGUI_GridPanel.cxx
   CartesianGridPluginGUI_HypothesisCreator.cxx
+  CartesianGridPluginGUI_PanelGlue.cxx
   ${_moc_SOURCES}
 )
 

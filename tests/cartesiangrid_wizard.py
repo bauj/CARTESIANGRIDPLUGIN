@@ -1,0 +1,145 @@
+# Cartesian Grid Wizard run logic (no GUI): meshes found on a geometry, export without and with
+# the SMESH mesh, groups on geometry (solid groups only, no duplicates), compute failure; GEOM and
+# SHAPER geometries
+import os
+import tempfile
+import salome
+salome.standalone()
+salome.salome_init()
+import SMESH
+import medcoupling as mc
+from salome.geom import geomBuilder
+from salome.smesh import smeshBuilder
+from salome.CartesianGridPlugin import CartesianGridPluginBuilder as Builder
+from salome.CartesianGridPlugin.CartesianGridPluginWizard import WizardRun, newMesh
+geompy = geomBuilder.New()
+smesh = smeshBuilder.New()
+
+tmp = tempfile.mkdtemp()
+expected = {"MAT_AIR": 7424, "MAT_IRON": 504, "MAT_LEAD": 8, "MAT_WOOD": 64}
+
+def box(x0, y0, z0, x1, y1, z1):
+    return geompy.MakeBoxTwoPnt(geompy.MakeVertex(x0, y0, z0), geompy.MakeVertex(x1, y1, z1))
+
+def medGroups(fileName):
+    m = mc.MEDFileMesh.New(fileName)
+    assert isinstance(m, mc.MEDFileCMesh), type(m)
+    return {g: m.getGroupArr(0, g).getNumberOfTuples() for g in m.getGroupsNames()}
+
+def meshGroups(mesh):
+    return {g.GetName().strip(): g.Size() for g in mesh.GetGroups()}
+
+def raises(func):
+    try:
+        func()
+    except RuntimeError as e:
+        return str(e)
+    raise AssertionError("no RuntimeError")
+
+# ---- GEOM world of cartesiangrid_four_materials, plus a face group and a second solid group
+world = geompy.MakeCompound([box(-100, -100, -100, 100, 100, 100),
+                             box(-90, -40, -40, -10, 40, 40),
+                             box(-60, -10, -10, -40, 10, 10),
+                             box(30, -60, -20, 70, -20, 20)])
+geompy.addToStudy(world, "World")
+solids = geompy.SubShapeAllSortedCentres(world, geompy.ShapeType["SOLID"])
+by_volume = {round(geompy.BasicProperties(s)[2]): s for s in solids}
+for name, vol in {"MAT_AIR": 8000000, "MAT_IRON": 512000, "MAT_WOOD": 64000, "MAT_LEAD": 8000}.items():
+    g = geompy.CreateGroup(world, geompy.ShapeType["SOLID"])
+    geompy.UnionList(g, [by_volume[vol]])
+    geompy.addToStudyInFather(world, g, name)
+other = geompy.CreateGroup(world, geompy.ShapeType["SOLID"])
+geompy.UnionList(other, [by_volume[512000]])
+geompy.addToStudyInFather(world, other, "other")
+faces = geompy.CreateGroup(world, geompy.ShapeType["FACE"])
+geompy.UnionList(faces, geompy.SubShapeAll(by_volume[8000000], geompy.ShapeType["FACE"])[:1])
+geompy.addToStudyInFather(world, faces, "faces")
+
+# ---- meshes found on the geometry
+assert Builder.CartesianGridMeshesOn(world) == []
+hexa = smesh.Mesh(world, "Hexa")
+hexa.Segment().NumberOfSegments(2)
+hexa.Hexahedron()
+mesh = newMesh(world, "W1")
+found = Builder.CartesianGridMeshesOn(world)
+assert [n for n, _ in found] == ["W1"], found
+assert found[0][1]._is_equivalent(mesh.GetMesh())
+hyp = Builder.CartesianGridParametersOf(mesh)
+assert hyp is not None and Builder.CartesianGridParametersOf(hexa) is None
+for axis in range(3):
+    hyp.SetNbCells(axis, 20)
+
+# ---- export only: no SMESH cells
+f1 = os.path.join(tmp, "w1.med")
+summary = WizardRun(mesh, f1, False, "MAT_").run()
+assert medGroups(f1) == expected, medGroups(f1)
+assert mesh.NbVolumes() == 0
+assert "SMESH mesh computed" not in summary, summary
+
+# ---- export with the SMESH mesh: groups of solids created, face group skipped
+f2 = os.path.join(tmp, "w2.med")
+summary = WizardRun(mesh, f2, True, "MAT_").run()
+assert medGroups(f2) == expected
+assert mesh.NbVolumes() == 8000, mesh.NbVolumes()
+groups = meshGroups(mesh)
+assert groups == dict(expected, other=504), groups
+assert "Mesh groups created" in summary and "Group faces skipped: no cell" in summary, summary
+
+# ---- run again: no duplicate group
+summary = WizardRun(mesh, f2, True, "MAT_").run()
+assert meshGroups(mesh) == groups, meshGroups(mesh)
+assert "Group MAT_AIR skipped: a mesh group of that name exists" in summary, summary
+
+# ---- a second mesh on the same geometry
+mesh2 = newMesh(world, "W2")
+assert [n for n, _ in Builder.CartesianGridMeshesOn(world)] == ["W1", "W2"]
+
+# ---- compute failure: Keep outside cells on a non-compound shape, no export
+single = box(0, 0, 0, 10, 10, 10)
+geompy.addToStudy(single, "Single")
+g = geompy.CreateGroup(single, geompy.ShapeType["SOLID"])
+geompy.UnionList(g, [geompy.SubShapeAll(single, geompy.ShapeType["SOLID"])[0]])
+geompy.addToStudyInFather(single, g, "MAT_X")
+bad = newMesh(single, "Bad")
+Builder.CartesianGridParametersOf(bad).SetKeepOutsideCells(True)
+f3 = os.path.join(tmp, "bad.med")
+msg = raises(WizardRun(bad, f3, True, "MAT_").run)
+assert "not computed" in msg, msg
+assert not os.path.exists(f3)
+
+# ---- export error: no zone group with the prefix
+msg = raises(WizardRun(mesh2, os.path.join(tmp, "none.med"), False, "NOPE_").run)
+assert "No geometry group named NOPE_*" in msg, msg
+
+# ---- SHAPER geometry, as cartesiangrid_four_materials_shaper
+from salome.shaper import model
+import SHAPERSTUDY
+model.begin()
+partSet = model.moduleDocument()
+doc = model.addPart(partSet).document()
+boxes = [model.addBox(doc, 0, 0, 0, 100, 100, 100), model.addBox(doc, -50, 0, 0, 40, 40, 40),
+         model.addBox(doc, -50, 0, 0, 10, 10, 10), model.addBox(doc, 50, -40, 0, 20, 20, 20)]
+shaperWorld = model.addCompound(doc, [model.selection("SOLID", b.result().name()) for b in boxes])
+shaperWorld.result().setName("World")
+model.do()
+for i, name in enumerate(["MAT_AIR", "MAT_IRON", "MAT_LEAD", "MAT_WOOD"]):
+    grp = model.addGroup(doc, [model.selection("SOLID", "Compound_1_1_%d" % (i + 1))])
+    grp.setName(name)
+    grp.result().setName(name)
+model.end()
+model.publishToShaperStudy()
+published = SHAPERSTUDY.shape(model.featureStringId(shaperWorld))
+sworld = published[0] if isinstance(published, (list, tuple)) else published
+
+smesh3 = newMesh(sworld, "S1")
+assert [n for n, _ in Builder.CartesianGridMeshesOn(sworld)] == ["S1"]
+Builder.CartesianGridMeshesOn(world)       # GEOM meshes not mixed in
+assert [n for n, _ in Builder.CartesianGridMeshesOn(world)] == ["W1", "W2"]
+h3 = Builder.CartesianGridParametersOf(smesh3)
+for axis in range(3):
+    h3.SetNbCells(axis, 20)
+f4 = os.path.join(tmp, "shaper.med")
+WizardRun(smesh3, f4, True, "MAT_").run()
+assert medGroups(f4) == expected, medGroups(f4)
+assert meshGroups(smesh3) == expected, meshGroups(smesh3)
+print("OK")

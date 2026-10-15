@@ -29,8 +29,8 @@ def CartesianGridAlgorithm(mesh):
 
 GEOM_GROUP_TYPE = 37   # GetType() of a group, GEOM and SHAPERSTUDY
 
-def _geometryGroups(shape):
-    """(study name of shape, [(group name, sub-shape ids)]) of the groups published under shape
+def _geometryGroupObjects(shape):
+    """(study name of shape, [(group name, group object)]) of the groups published under shape
     in the study, GEOM or SHAPERSTUDY alike. Read from the study tree: no engine lookup, which can return another
     module's engine in a GUI session"""
     import salome
@@ -46,8 +46,71 @@ def _geometryGroups(shape):
         obj = child.GetObject()
         obj = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
         if obj is not None and obj.GetType() == GEOM_GROUP_TYPE:
-            groups.append((child.GetName(), [i for i in obj.GetSubShapeIndices() if i > 0]))
+            groups.append((child.GetName(), obj))
     return so.GetName(), groups
+
+def _geometryGroups(shape):
+    """(study name of shape, [(group name, sub-shape ids)]) of the groups published under shape"""
+    shapeName, groups = _geometryGroupObjects(shape)
+    return shapeName, [(name, [i for i in g.GetSubShapeIndices() if i > 0]) for name, g in groups]
+
+def _entry(obj):
+    import salome
+    so = salome.ObjectToSObject(obj) if obj is not None else None
+    return so.GetID() if so is not None else None
+
+def CartesianGridMeshesOn(shape):
+    """[(study name, SMESH.SMESH_Mesh)] of the study meshes built on shape (same study object)
+    whose main shape carries the CartesianGrid_3D algorithm, in study order"""
+    import salome
+    shapeEntry = _entry(shape)
+    comp = salome.myStudy.FindComponent("SMESH")
+    if shapeEntry is None or comp is None:
+        return []
+    meshes = []
+    it = salome.myStudy.NewChildIterator(comp)
+    while it.More():
+        so = it.Value()
+        it.Next()
+        obj = so.GetObject()
+        mesh = obj._narrow(SMESH.SMESH_Mesh) if obj is not None else None
+        if mesh is None or not mesh.HasShapeToMesh() or _entry(mesh.GetShapeToMesh()) != shapeEntry:
+            continue
+        try:
+            CartesianGridAlgorithm(mesh)
+        except ValueError:
+            continue
+        meshes.append((so.GetName(), mesh))
+    return meshes
+
+def CartesianGridParametersOf(mesh):
+    """the CartesianGridParameters hypothesis of the main shape of mesh, or None"""
+    smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
+    for h in smeshMesh.GetHypothesisList(smeshMesh.GetShapeToMesh()):
+        if h.GetName() == "CartesianGridParameters":
+            return h._narrow(CartesianGridPlugin.CartesianGridPlugin_Hypothesis)
+    return None
+
+def CreateGroupsOnGeometry(mesh):
+    """One volume group on geometry per group of the main shape of mesh (smeshBuilder.Mesh), named
+    after it; names already used by a mesh group are skipped. Groups left empty (not a group of
+    solids, or no cell center in its solids) are removed. Returns (created names,
+    skipped [(name, reason)])"""
+    _, groups = _geometryGroupObjects(mesh.GetShape())
+    used = {g.GetName().strip() for g in mesh.GetGroups()}
+    created, skipped = [], []
+    for name, g in groups:
+        if name in used:
+            skipped.append((name, "a mesh group of that name exists"))
+            continue
+        group = mesh.GroupOnGeom(g, name, SMESH.VOLUME)
+        if group.Size() == 0:
+            mesh.RemoveGroup(group)
+            skipped.append((name, "no cell: not a group of solids, or no cell center in its solids"))
+        else:
+            created.append(name)
+            used.add(name)
+    return created, skipped
 
 def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file

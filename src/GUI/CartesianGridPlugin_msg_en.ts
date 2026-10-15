@@ -5,6 +5,9 @@
     <name>CartesianGridPluginGUI_HypothesisCreator</name>
     <message><source>CARTESIANGRID_GRID_TITLE</source><translation>Hypothesis Construction</translation></message>
     <message><source>CARTESIANGRID_GRID_HYPOTHESIS</source><translation>Cartesian Grid Parameters</translation></message>
+</context>
+<context>
+    <name>CartesianGridPluginGUI_GridPanel</name>
     <message><source>CARTESIANGRID_OUTSIDE_CELLS</source><translation>Cells outside all solids</translation></message>
     <message><source>CARTESIANGRID_REMOVE</source><translation>Remove</translation></message>
     <message><source>CARTESIANGRID_KEEP</source><translation>Keep</translation></message>

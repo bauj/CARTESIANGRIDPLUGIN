@@ -80,6 +80,7 @@ INSTALL(FILES ${CartesianGridEngine_HEADERS} DESTINATION ${SALOME_INSTALL_HEADER
 SET(_bin_SCRIPTS
   __init__.py
   CartesianGridPluginBuilder.py
-  CartesianGridPluginExportDialog.py
+  CartesianGridPluginPanel.py
+  CartesianGridPluginWizard.py
 )
 SALOME_INSTALL_SCRIPTS("${_bin_SCRIPTS}" ${SALOME_INSTALL_PYTHON}/salome/CartesianGridPlugin)

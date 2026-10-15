@@ -11,4 +11,5 @@ SET(TEST_NAMES
   cartesiangrid_cancel
   cartesiangrid_grid_modes
   cartesiangrid_export_med
+  cartesiangrid_wizard
 )

@@ -4,11 +4,11 @@
 
 import salome_pluginsmanager
 
-def cartesianGridMEDExport(context):
-    from salome.CartesianGridPlugin import CartesianGridPluginExportDialog
-    CartesianGridPluginExportDialog.run(context)
+def cartesianGridWizard(context):
+    from salome.CartesianGridPlugin import CartesianGridPluginWizard
+    CartesianGridPluginWizard.run(context)
 
-salome_pluginsmanager.AddFunction("Cartesian Grid MED Export...",
-                                  "Write the Cartesian grid of the selected Cartesian Grid mesh to a MED "
-                                  "file, one cell group per material",
-                                  cartesianGridMEDExport)
+salome_pluginsmanager.AddFunction("Cartesian Grid Wizard",
+                                  "Geometry to Cartesian MED file in one dialog: grid, export, and "
+                                  "optionally the SMESH mesh",
+                                  cartesianGridWizard)

@@ -47,8 +47,7 @@ In the GUI: *Create Mesh*, 3D algorithm *Cartesian Grid 3D*, hypothesis *Cartesi
 Writes the grid of a Cartesian Grid mesh to a MED file as a **Cartesian mesh** (three coordinate arrays,
 one zone per cell): far smaller than an unstructured MED export.
 
-- GUI: select the mesh, *Mesh > SMESH plugins > Cartesian Grid MED Export...*: file, source,
-  zone prefix; progress bar and Cancel; a summary gives the cells per zone.
+- GUI: *Mesh > SMESH plugins > Cartesian Grid Wizard* (see below).
 - Python:
 
 ```python
@@ -92,14 +91,34 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
 
 ## Layout
 
+## Cartesian Grid Wizard
+
+*Mesh > SMESH plugins > Cartesian Grid Wizard*: geometry to Cartesian MED file in one dialog, without
+the Create Mesh steps.
+
+- **Geometry**: select a GEOM or SHAPER geometry in the object browser, press *Select*.
+- **Mesh**: the Cartesian Grid meshes of that geometry, plus *New mesh* (with a name). The chosen mesh
+  is updated; a new one is created with the Cartesian Grid 3D algorithm and its hypothesis and stays in
+  the study (ordinary mesh, normal Python dump).
+- **Grid**: the per-axis tabs of the *Cartesian Grid Parameters* dialog (same C++ widget), filled from
+  the chosen mesh.
+- **Export**: MED file, zone prefix (`MAT_`); zones always come from the geometry groups.
+- **Also compute the SMESH mesh** (optional): computes the hexahedra and creates one mesh group per
+  geometry group of solids (names already used are skipped). A SMESH mesh is unstructured (every node
+  and hexahedron stored), much bigger than the Cartesian MED file; it is only for viewing.
+- Run shows a progress bar (compute, then export) and Cancel, then a summary; the dialog stays open.
+
+The grid panel is the C++ `CartesianGridPluginGUI_GridPanel`, created through C entry points of
+`libCartesianGridPluginGUI` (ctypes) and wrapped as a PyQt widget with `sip.wrapinstance`.
+
 | Path | Content |
 |---|---|
 | `src/CartesianGridPlugin/CartesianGridPlugin_Grid.hxx`, `CartesianGridPlugin_Classifier.*` | pure OCCT core: grid and multithreaded cell owner classifier (`libCartesianGridCore`) |
 | `src/CartesianGridPlugin/CartesianGridPlugin_CartesianGrid_3D*`, `CartesianGridPlugin_Hypothesis*`, `CartesianGridPlugin_i.cxx` | SMESH algorithm, hypothesis, CORBA servants, factory (`libCartesianGridEngine`) |
 | `src/CartesianGridPlugin/CartesianGridPlugin_CartesianMED.*` | MED Cartesian file writer (MEDLoader) |
 | `src/CartesianGridPlugin/CartesianGridPluginBuilder.py` | Python API (`mesh.CartesianGrid()`, `ExportCartesianMED`) |
-| `src/CartesianGridPlugin/CartesianGridPluginExportDialog.py`, `src/GUI/smesh_plugins.py` | *Cartesian Grid MED Export* dialog and its SMESH plugins menu entry |
-| `src/GUI` | hypothesis dialog (`libCartesianGridPluginGUI`) |
+| `src/CartesianGridPlugin/CartesianGridPluginWizard.py`, `CartesianGridPluginPanel.py`, `src/GUI/smesh_plugins.py` | *Cartesian Grid Wizard*, its embedding of the C++ grid panel, SMESH plugins menu entry |
+| `src/GUI` | hypothesis dialog and grid panel with its C entry points (`libCartesianGridPluginGUI`) |
 | `idl/CartesianGridPlugin_Algorithm.idl` | CORBA interfaces |
 | `resources/CartesianGridPlugin.xml` | meshers declaration for SMESH |
 | `tests` | C++ core tests and Python smesh tests, `data/four_materials.gdml` |

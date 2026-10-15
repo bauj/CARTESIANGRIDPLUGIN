@@ -11,10 +11,8 @@
 
 #include <SMESHGUI_Hypotheses.h>
 
-class QComboBox;
 class QLineEdit;
-class QTabWidget;
-class CartesianGridPluginGUI_AxisTab;
+class CartesianGridPluginGUI_GridPanel;
 
 /*!
  * \brief Dialog of the CartesianGridParameters hypothesis: one tab per axis (mode, values, actual cells
@@ -39,10 +37,8 @@ protected:
   virtual QString  type() const;
 
 private:
-  QLineEdit*              myName;
-  QTabWidget*             myTabWidget;
-  CartesianGridPluginGUI_AxisTab* myTabs[3];
-  QComboBox*              myOutside;
+  QLineEdit*                        myName;
+  CartesianGridPluginGUI_GridPanel* myPanel;
 };
 
 #endif

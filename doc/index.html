@@ -29,16 +29,34 @@ bound to the main shape, which must then be a compound; a warning gives their nu
 <p>Create solid groups on the geometry (in SHAPER GDML mode: <i>Create material groups</i> gives
 <code>MAT_&lt;material&gt;</code> groups), then tick <i>Create all groups on geometry</i> in the
 mesh dialog: one mesh group per material.</p>
-<h2>Cartesian MED export</h2>
-<p>Select the mesh, then <i>Mesh &gt; SMESH plugins &gt; Cartesian Grid MED Export...</i>: the grid is written to a MED
-file as a Cartesian mesh (three coordinate arrays, one zone per cell), far smaller than an unstructured export.
-A progress bar and Cancel are shown; a summary gives the cells per zone.</p>
+<h2>Cartesian Grid Wizard</h2>
+<p><i>Mesh &gt; SMESH plugins &gt; Cartesian Grid Wizard</i> goes from a geometry to the Cartesian MED file in one
+dialog, without the Create Mesh steps:</p>
 <ul>
-<li><b>From Geometry</b> (default, no mesh element needed): zones are the geometry groups of the main shape whose
-name starts with the <i>zone prefix</i> (<code>MAT_</code> by default, empty: all groups); a cell takes the zone of the
-solid containing its center. A solid in two zone groups is an error; solids in no zone group are listed in the summary.</li>
-<li><b>From Computed mesh</b>: zones are the mesh volume groups whose name starts with the prefix. A cell in two
-zone groups is an error.</li>
+<li><b>Geometry</b>: select a GEOM or SHAPER geometry in the object browser and press <i>Select</i>.</li>
+<li><b>Mesh</b>: the meshes of that geometry using the Cartesian Grid 3D algorithm, plus <i>New mesh</i>. The chosen
+mesh is updated; a new mesh gets the algorithm and a Cartesian Grid Parameters hypothesis and stays in the study
+as an ordinary mesh.</li>
+<li><b>Grid</b>: the same per-axis tabs as the hypothesis dialog, filled from the chosen mesh.</li>
+<li><b>Export</b>: MED file and zone prefix; zones come from the geometry groups.</li>
+<li><b>Also compute the SMESH mesh</b> (optional): computes the hexahedra and creates one mesh group per geometry
+group of solids (names already used are skipped, groups of faces or edges are skipped). A SMESH mesh is
+unstructured: every node and hexahedron is stored, so it is much bigger and slower than the Cartesian MED file.
+It is only needed to view the cells.</li>
+</ul>
+<p><i>Run</i> shows a progress bar (compute, then export) and a Cancel button, then a summary. The dialog stays open
+for another run. Changing the grid of a computed mesh clears its cells until it is computed again.</p>
+<h2>Cartesian MED export</h2>
+<p>Run from <i>Mesh &gt; SMESH plugins &gt; Cartesian Grid Wizard</i> (below), or from Python with
+<code>ExportCartesianMED</code>: the grid is written to a MED file as a Cartesian mesh (three coordinate arrays,
+one zone per cell), far smaller than an unstructured export. A summary gives the cells per zone.</p>
+<ul>
+<li><b>Zones from the geometry</b> (wizard, Python <code>source="geometry"</code>, no mesh element needed): zones are
+the geometry groups of the main shape whose name starts with the <i>zone prefix</i> (<code>MAT_</code> by default,
+empty: all groups); a cell takes the zone of the solid containing its center. A solid in two zone groups is an
+error; solids in no zone group are listed in the summary.</li>
+<li><b>Zones from the mesh</b> (Python only, <code>source="mesh"</code>): zones are the volume groups of the computed
+mesh whose name starts with the prefix. A cell in two zone groups is an error.</li>
 <li><b>File</b>: one Cartesian mesh named after the mesh, components X, Y, Z, cells numbered i fastest, then j, then k.
 Family 0: no zone; zone groups sorted by name get families -1, -2, ... named <code>FAM_&lt;group&gt;</code>, each holding
 the group. Group names: at most 60 characters.</li>
