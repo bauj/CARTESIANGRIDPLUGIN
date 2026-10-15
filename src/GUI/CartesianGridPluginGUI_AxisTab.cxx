@@ -71,7 +71,11 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
 
   // page NB_CELLS
   QWidget* nbPage = new QWidget(myStack);
-  QHBoxLayout* nbLay = new QHBoxLayout(nbPage);
+  QVBoxLayout* nbTop = new QVBoxLayout(nbPage);   // row at the top of the page, not centered
+  nbTop->setContentsMargins(0, 0, 0, 0);
+  QHBoxLayout* nbLay = new QHBoxLayout();
+  nbTop->addLayout(nbLay);
+  nbTop->addStretch();
   nbLay->addWidget(new QLabel(tr("CARTESIANGRID_NB_CELLS"), nbPage));
   myNbCells = new SalomeApp_IntSpinBox(nbPage);
   myNbCells->setRange(1, 100000);
@@ -81,7 +85,11 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
 
   // page STEP
   QWidget* stepPage = new QWidget(myStack);
-  QHBoxLayout* stepLay = new QHBoxLayout(stepPage);
+  QVBoxLayout* stepTop = new QVBoxLayout(stepPage);
+  stepTop->setContentsMargins(0, 0, 0, 0);
+  QHBoxLayout* stepLay = new QHBoxLayout();
+  stepTop->addLayout(stepLay);
+  stepTop->addStretch();
   stepLay->addWidget(new QLabel(tr("CARTESIANGRID_STEP"), stepPage));
   myStep = new SMESHGUI_SpinBox(stepPage);
   myStep->RangeStepAndValidator(1e-12, 1e12, 1., "length_precision");

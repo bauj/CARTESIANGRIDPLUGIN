@@ -3,6 +3,7 @@
 # Mesh > SMESH plugins > Cartesian Grid Wizard: geometry -> grid -> Cartesian MED file, optionally
 # the SMESH mesh too. Builds an ordinary mesh (CartesianGrid_3D + CartesianGridParameters).
 
+import html
 import os
 import threading
 
@@ -88,8 +89,8 @@ class WizardRun:
 
 # ---------------------------------------------------------------------------- dialog
 
-from qtsalome import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
-                      QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox, QProgressBar,
+from qtsalome import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog,
+                      QGridLayout, QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox, QProgressBar,
                       QPushButton, QTimer, QVBoxLayout, QWidget)
 
 COMPUTE_TIP = ("Creates the hexahedra in SMESH, to view the cells and the groups (one mesh group per "
@@ -123,6 +124,7 @@ class WizardDialog(QDialog):
     def __init__(self, parent):
         QDialog.__init__(self, parent)
         self.setWindowTitle(TITLE)
+        self.setMinimumWidth(520)
         self.geom = None
         self.geomName = ""
         self.meshes = []                 # [(name, SMESH.SMESH_Mesh)] of the combo
@@ -131,11 +133,33 @@ class WizardDialog(QDialog):
         self.result = None
 
         layout = QVBoxLayout(self)
+        labels = []                      # first column of every group, same width for alignment
+
+        def group(title):
+            box = QGroupBox(title)
+            grid = QGridLayout(box)
+            grid.setColumnStretch(1, 1)
+            layout.addWidget(box)
+            return grid
+
+        def addRow(grid, text, widget):
+            row = grid.rowCount()
+            label = QLabel(text)
+            labels.append(label)
+            grid.addWidget(label, row, 0)
+            grid.addWidget(widget, row, 1)
+            return label
+
+        def hbox(*widgets):
+            w = QWidget()
+            lay = QHBoxLayout(w)
+            lay.setContentsMargins(0, 0, 0, 0)
+            for x in widgets:
+                lay.addWidget(x)
+            return w
 
         # geometry
-        geomBox = QGroupBox("Geometry")
-        geomLayout = QVBoxLayout(geomBox)
-        row = QHBoxLayout()
+        geomGrid = group("Geometry")
         self.geomField = QLineEdit()
         self.geomField.setReadOnly(True)
         self.geomField.setPlaceholderText("Select a geometry (GEOM or SHAPER) in the object browser")
@@ -147,25 +171,21 @@ class WizardDialog(QDialog):
         self.selectBtn.setChecked(True)
         self.selectBtn.setToolTip("While pressed, the geometry follows the selection in the object browser")
         self.selectBtn.toggled.connect(self.selectionToggled)
-        row.addWidget(self.selectBtn)
-        row.addWidget(self.geomField)
-        geomLayout.addLayout(row)
+        addRow(geomGrid, "Shape", hbox(self.selectBtn, self.geomField))
         self.geomMessage = QLabel()
         self.geomMessage.setStyleSheet("color: red")
-        geomLayout.addWidget(self.geomMessage)
-        layout.addWidget(geomBox)
+        self.geomMessage.setVisible(False)
+        geomGrid.addWidget(self.geomMessage, geomGrid.rowCount(), 1)
 
         # mesh
-        meshBox = QGroupBox("Mesh")
-        meshForm = QFormLayout(meshBox)
+        meshGrid = group("Mesh")
         self.meshCombo = QComboBox()
         self.meshCombo.setToolTip(MESH_TIP)
         self.meshCombo.currentIndexChanged.connect(self.meshChanged)
-        meshForm.addRow("Mesh", self.meshCombo)
+        addRow(meshGrid, "Mesh", self.meshCombo)
         self.meshName = QLineEdit()
-        self.meshNameLabel = QLabel("Name")
-        meshForm.addRow(self.meshNameLabel, self.meshName)
-        layout.addWidget(meshBox)
+        self.meshName.textChanged.connect(self.updateRunTip)
+        self.meshNameLabel = addRow(meshGrid, "Name", self.meshName)
 
         # grid: the C++ panel of the hypothesis dialog
         gridBox = QGroupBox("Grid")
@@ -173,28 +193,30 @@ class WizardDialog(QDialog):
         from salome.CartesianGridPlugin.CartesianGridPluginPanel import GridPanel
         self.panel = GridPanel(gridBox)
         gridLayout.addWidget(self.panel.widget)
-        layout.addWidget(gridBox)
+        layout.addWidget(gridBox, 1)
 
         # export
-        exportBox = QGroupBox("Export")
-        exportForm = QFormLayout(exportBox)
+        exportGrid = group("Export")
         self.file = QLineEdit()
         self.file.setToolTip(FILE_TIP)
+        self.file.textChanged.connect(self.updateRunTip)
         browse = QPushButton("...")
+        browse.setFixedWidth(browse.fontMetrics().horizontalAdvance("...") + 24)
+        browse.setToolTip("Choose the MED file")
         browse.clicked.connect(self.browse)
-        fileRow = QHBoxLayout()
-        fileRow.addWidget(self.file)
-        fileRow.addWidget(browse)
-        fileWidget = QWidget()
-        fileWidget.setLayout(fileRow)
-        exportForm.addRow("MED file", fileWidget)
+        addRow(exportGrid, "MED file", hbox(self.file, browse))
         self.prefix = QLineEdit("MAT_")
         self.prefix.setToolTip(PREFIX_TIP)
-        exportForm.addRow("Zone groups", self.prefix)
+        self.prefix.textChanged.connect(self.updateRunTip)
+        addRow(exportGrid, "Zone groups", self.prefix)
         self.computeBox = QCheckBox("Also compute the SMESH mesh")
         self.computeBox.setToolTip(COMPUTE_TIP)
-        exportForm.addRow(self.computeBox)
-        layout.addWidget(exportBox)
+        self.computeBox.toggled.connect(self.updateRunTip)
+        exportGrid.addWidget(self.computeBox, exportGrid.rowCount(), 1)
+
+        width = max(l.sizeHint().width() for l in labels)
+        for l in labels:
+            l.setMinimumWidth(width)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
@@ -222,6 +244,10 @@ class WizardDialog(QDialog):
             pass
 
     # ---- geometry and mesh
+    def setGeomMessage(self, text):
+        self.geomMessage.setText(text)
+        self.geomMessage.setVisible(bool(text))
+
     def selectionToggled(self, on):
         if on:
             self.selectGeometry()
@@ -235,7 +261,7 @@ class WizardDialog(QDialog):
         if geom is None:
             # another kind of object selected: the geometry is kept; a hint while there is none
             if self.geom is None:
-                self.geomMessage.setText("" if salome.sg.SelectedCount() == 0 else text)
+                self.setGeomMessage("" if salome.sg.SelectedCount() == 0 else text)
             self.updateRunButton()
             return
         if entry == self.geomEntry:
@@ -243,11 +269,11 @@ class WizardDialog(QDialog):
         self.geomEntry = entry
         self.geom, self.geomName = geom, text
         self.geomField.setText(text)
-        self.geomMessage.setText("")
+        self.setGeomMessage("")
         try:
             self.panel.setShape(entry)
         except RuntimeError as e:
-            self.geomMessage.setText(str(e))
+            self.setGeomMessage(str(e))
         self.fillMeshes()
 
     def fillMeshes(self, current=None):
@@ -293,6 +319,34 @@ class WizardDialog(QDialog):
     def updateRunButton(self):
         self.runBtn.setEnabled(self.geom is not None and self.worker is None)
         self.selectBtn.setEnabled(self.worker is None)
+        self.updateRunTip()
+
+    def updateRunTip(self, *args):
+        """tooltip of Run: what a run does with the current options"""
+        if self.geom is None:
+            self.runBtn.setToolTip("Select a geometry first")
+            return
+        mesh = self.selectedMesh()
+        steps = []
+        if mesh is None:
+            steps.append('Create the mesh "%s" on %s with the Cartesian Grid 3D algorithm and a Cartesian Grid '
+                         'Parameters hypothesis holding the grid above; it stays in the study.'
+                         % (self.meshName.text().strip() or "CartesianGrid", self.geomName))
+        else:
+            steps.append('Write the grid above to the hypothesis of the mesh "%s" (a computed mesh is cleared '
+                         'if the grid changed).' % self.meshCombo.currentText())
+        if self.computeBox.isChecked():
+            steps.append("Compute the SMESH mesh: unstructured hexahedra, every node and cell stored "
+                         "(about 760 bytes per cell); then one mesh group per geometry group of solids "
+                         "(names already used are skipped).")
+        else:
+            steps.append("No SMESH cells are created (the mesh only holds the algorithm and the grid).")
+        prefix = self.prefix.text()
+        steps.append("Write the Cartesian MED file %s: grid coordinates and one family per cell; zones = "
+                     "geometry groups %s." % (self.file.text().strip() or "(no file name)",
+                                              'named "%s*"' % prefix if prefix else "(all groups)"))
+        # rich text: Qt wraps it
+        self.runBtn.setToolTip("<b>Run</b><ol>%s</ol>" % "".join("<li>%s</li>" % html.escape(t) for t in steps))
 
     def browse(self):
         f, _ = QFileDialog.getSaveFileName(self, "MED file", self.file.text(), "MED files (*.med)")
