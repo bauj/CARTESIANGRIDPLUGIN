@@ -1,5 +1,5 @@
 SET(SUBDIRS_COMMON
-  VoxelPlugin
+  CartesianGridPlugin
 )
 
 IF(SALOME_BUILD_GUI)

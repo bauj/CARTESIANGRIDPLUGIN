@@ -1,8 +1,8 @@
 <document>
   <section name="resources">
-    <parameter name="VoxelPlugin" value="${VOXELPLUGIN_ROOT_DIR}/share/salome/resources/voxelplugin"/>
+    <parameter name="CartesianGridPlugin" value="${CARTESIANGRIDPLUGIN_ROOT_DIR}/share/salome/resources/cartesiangridplugin"/>
   </section>
   <section name="smesh_help">
-    <parameter name="User's Guide/Mesh module/Plug-ins/Voxel plugin" value="${VOXELPLUGIN_ROOT_DIR}/share/doc/salome/gui/VOXELPLUGIN/index.html"/>
+    <parameter name="User's Guide/Mesh module/Plug-ins/Cartesian Grid plugin" value="${CARTESIANGRIDPLUGIN_ROOT_DIR}/share/doc/salome/gui/CARTESIANGRIDPLUGIN/index.html"/>
   </section>
 </document>

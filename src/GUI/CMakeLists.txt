@@ -12,7 +12,7 @@ INCLUDE_DIRECTORIES(
   ${OMNIORB_INCLUDE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${PROJECT_BINARY_DIR}/idl
-  ${PROJECT_SOURCE_DIR}/src/VoxelPlugin
+  ${PROJECT_SOURCE_DIR}/src/CartesianGridPlugin
 )
 
 ADD_DEFINITIONS(
@@ -33,35 +33,35 @@ SET(_link_LIBRARIES
   ${GUI_qtx}
   ${GUI_SalomeApp}
   ${OpenCASCADE_FoundationClasses_LIBRARIES}
-  VoxelCore
-  VoxelEngine
-  SalomeIDLVOXELPLUGIN
+  CartesianGridCore
+  CartesianGridEngine
+  SalomeIDLCARTESIANGRIDPLUGIN
 )
 
 SET(_moc_HEADERS
-  VoxelPluginGUI_AxisTab.h
-  VoxelPluginGUI_HypothesisCreator.h
+  CartesianGridPluginGUI_AxisTab.h
+  CartesianGridPluginGUI_HypothesisCreator.h
 )
 
 QT_WRAP_MOC(_moc_SOURCES ${_moc_HEADERS})
 
-SET(VoxelPluginGUI_SOURCES
-  VoxelPluginGUI.cxx
-  VoxelPluginGUI_AxisTab.cxx
-  VoxelPluginGUI_HypothesisCreator.cxx
+SET(CartesianGridPluginGUI_SOURCES
+  CartesianGridPluginGUI.cxx
+  CartesianGridPluginGUI_AxisTab.cxx
+  CartesianGridPluginGUI_HypothesisCreator.cxx
   ${_moc_SOURCES}
 )
 
 SET(_ts_RESOURCES
-  VoxelPlugin_images.ts
-  VoxelPlugin_msg_en.ts
+  CartesianGridPlugin_images.ts
+  CartesianGridPlugin_msg_en.ts
 )
 
-ADD_LIBRARY(VoxelPluginGUI ${VoxelPluginGUI_SOURCES})
-TARGET_LINK_LIBRARIES(VoxelPluginGUI ${_link_LIBRARIES})
-INSTALL(TARGETS VoxelPluginGUI EXPORT ${PROJECT_NAME}TargetGroup DESTINATION ${SALOME_INSTALL_LIBS})
+ADD_LIBRARY(CartesianGridPluginGUI ${CartesianGridPluginGUI_SOURCES})
+TARGET_LINK_LIBRARIES(CartesianGridPluginGUI ${_link_LIBRARIES})
+INSTALL(TARGETS CartesianGridPluginGUI EXPORT ${PROJECT_NAME}TargetGroup DESTINATION ${SALOME_INSTALL_LIBS})
 INSTALL(FILES ${_moc_HEADERS} DESTINATION ${SALOME_INSTALL_HEADERS})
-QT_INSTALL_TS_RESOURCES("${_ts_RESOURCES}" "${SALOME_VOXELPLUGIN_INSTALL_RES_DATA}")
+QT_INSTALL_TS_RESOURCES("${_ts_RESOURCES}" "${SALOME_CARTESIANGRIDPLUGIN_INSTALL_RES_DATA}")
 
-# Mesh > SMESH plugins entries, found by the SALOME plugins manager through VOXELPLUGIN_ROOT_DIR
-INSTALL(FILES smesh_plugins.py DESTINATION ${SALOME_VOXELPLUGIN_INSTALL_PLUGINS})
+# Mesh > SMESH plugins entries, found by the SALOME plugins manager through CARTESIANGRIDPLUGIN_ROOT_DIR
+INSTALL(FILES smesh_plugins.py DESTINATION ${SALOME_CARTESIANGRIDPLUGIN_INSTALL_PLUGINS})

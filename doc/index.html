@@ -1,12 +1,12 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Voxel plugin</title></head>
+<html><head><meta charset="utf-8"><title>Cartesian Grid plugin</title></head>
 <body>
-<h1>Voxel plugin</h1>
-<p>3D algorithm <b>Voxel 3D</b> meshes a volume shape with an axis-aligned Cartesian grid of
-hexahedra (staircase voxels). Each cell belongs to the <b>smallest solid containing its center</b>
+<h1>Cartesian Grid plugin</h1>
+<p>3D algorithm <b>Cartesian Grid 3D</b> meshes a volume shape with an axis-aligned Cartesian grid of
+hexahedra (staircase cells). Each cell belongs to the <b>smallest solid containing its center</b>
 (a point on a face counts as inside), so nested or overlapping solids (GDML World Volumes) work:
 the deepest volume wins.</p>
-<h2>Hypothesis Voxel Grid</h2>
+<h2>Hypothesis Cartesian Grid Parameters</h2>
 <ul>
 <li>Per axis X, Y, Z (one tab per axis in the dialog), one of:
 <ul>
@@ -51,7 +51,7 @@ the group. Group names: at most 60 characters.</li>
 <h2>Python</h2>
 <pre>
 mesh = smesh.Mesh(shape)
-algo = mesh.Voxel()
+algo = mesh.CartesianGrid()
 hyp = algo.Grid(nbCells=[40, 40, 20])   # or step=2.5, keepOutsideCells=True
 hyp.SetStep(2, 5.0)                     # axis 0=X, 1=Y, 2=Z
 hyp.SetCoordinates(0, [0, 2, 5, 10])    # X node coordinates

@@ -1,14 +1,14 @@
 SET(TEST_NAMES
-  voxel_hypothesis
-  voxel_four_materials
-  voxel_four_materials_shaper
-  voxel_outside_cells
-  voxel_errors
-  voxel_shaper_gdml
-  voxel_gdml_file
-  voxel_evaluate
-  voxel_states
-  voxel_cancel
-  voxel_grid_modes
-  voxel_export_med
+  cartesiangrid_hypothesis
+  cartesiangrid_four_materials
+  cartesiangrid_four_materials_shaper
+  cartesiangrid_outside_cells
+  cartesiangrid_errors
+  cartesiangrid_shaper_gdml
+  cartesiangrid_gdml_file
+  cartesiangrid_evaluate
+  cartesiangrid_states
+  cartesiangrid_cancel
+  cartesiangrid_grid_modes
+  cartesiangrid_export_med
 )

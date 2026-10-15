@@ -1,9 +1,9 @@
-# VOXELPLUGIN
+# CARTESIANGRIDPLUGIN
 
-Cartesian voxel meshing plug-in for the SALOME Mesh module (SMESH), SALOME 9.16.
+Cartesian grid meshing plug-in for the SALOME Mesh module (SMESH), SALOME 9.16.
 
-The 3D algorithm **Voxel 3D** meshes a volume shape with an axis-aligned grid of
-hexahedra ("staircase" voxels: no cut cells, no polyhedra). Each cell is bound to the
+The 3D algorithm **Cartesian Grid 3D** meshes a volume shape with an axis-aligned grid of
+hexahedra ("staircase" cells: no cut cells, no polyhedra). Each cell is bound to the
 **smallest solid containing its center** (a center on a face counts as inside), so
 nested or overlapping solids work: the deepest volume wins. This is what a GDML World
 Volume built in SHAPER needs, where daughter volumes are not cut out of their mother.
@@ -19,7 +19,7 @@ from salome.smesh import smeshBuilder
 smesh = smeshBuilder.New()
 
 mesh = smesh.Mesh(shape)                  # algorithm on the main shape (all solids)
-algo = mesh.Voxel()
+algo = mesh.CartesianGrid()
 hyp = algo.Grid(nbCells=[40, 40, 20])     # or step=2.5, keepOutsideCells=True
 hyp.SetStep(2, 5.0)                       # axis 0=X, 1=Y, 2=Z
 hyp.SetCoordinates(0, [0, 2, 5, 10])      # X node coordinates
@@ -29,7 +29,7 @@ hyp.SetSpacing(2, ["0.5", "2"], [0.5])    # Z: 0.5 up to the middle, then 2
 mesh.Compute()
 ```
 
-Hypothesis **Voxel Grid**:
+Hypothesis **Cartesian Grid Parameters**:
 
 - per axis, a number of cells n (spacing = extent / n), a step s
   (n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box
@@ -40,11 +40,11 @@ Hypothesis **Voxel Grid**:
 - cells outside all solids: removed (default) or kept. Kept cells are bound to the main
   shape, which must then be a compound, and a warning gives their number.
 
-In the GUI: *Create Mesh*, 3D algorithm *Voxel 3D*, hypothesis *Voxel Grid*.
+In the GUI: *Create Mesh*, 3D algorithm *Cartesian Grid 3D*, hypothesis *Cartesian Grid Parameters*.
 
 ## Cartesian MED export
 
-Writes the grid of a Voxel mesh to a MED file as a **Cartesian mesh** (three coordinate arrays,
+Writes the grid of a Cartesian Grid mesh to a MED file as a **Cartesian mesh** (three coordinate arrays,
 one zone per cell): far smaller than an unstructured MED export.
 
 - GUI: select the mesh, *Mesh > SMESH plugins > Cartesian Grid MED Export...*: file, source,
@@ -53,9 +53,9 @@ one zone per cell): far smaller than an unstructured MED export.
 
 ```python
 algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
-# or on any mesh with the Voxel 3D algorithm (smeshBuilder or CORBA mesh):
-from salome.VoxelPlugin import VoxelPluginBuilder
-summary = VoxelPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
+# or on any mesh with the Cartesian Grid 3D algorithm (smeshBuilder or CORBA mesh):
+from salome.CartesianGridPlugin import CartesianGridPluginBuilder
+summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
 ```
 
 - Sources:
@@ -94,30 +94,30 @@ summary = VoxelPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
 
 | Path | Content |
 |---|---|
-| `src/VoxelPlugin/VoxelPlugin_Grid.hxx`, `VoxelPlugin_Classifier.*` | pure OCCT core: grid and multithreaded cell owner classifier (`libVoxelCore`) |
-| `src/VoxelPlugin/VoxelPlugin_Voxel_3D*`, `VoxelPlugin_Hypothesis*`, `VoxelPlugin_i.cxx` | SMESH algorithm, hypothesis, CORBA servants, factory (`libVoxelEngine`) |
-| `src/VoxelPlugin/VoxelPlugin_CartesianMED.*` | MED Cartesian file writer (MEDLoader) |
-| `src/VoxelPlugin/VoxelPluginBuilder.py` | Python API (`mesh.Voxel()`, `ExportCartesianMED`) |
-| `src/VoxelPlugin/VoxelPluginExportDialog.py`, `src/GUI/smesh_plugins.py` | *Cartesian Grid MED Export* dialog and its SMESH plugins menu entry |
-| `src/GUI` | hypothesis dialog (`libVoxelPluginGUI`) |
-| `idl/VoxelPlugin_Algorithm.idl` | CORBA interfaces |
-| `resources/VoxelPlugin.xml` | meshers declaration for SMESH |
+| `src/CartesianGridPlugin/CartesianGridPlugin_Grid.hxx`, `CartesianGridPlugin_Classifier.*` | pure OCCT core: grid and multithreaded cell owner classifier (`libCartesianGridCore`) |
+| `src/CartesianGridPlugin/CartesianGridPlugin_CartesianGrid_3D*`, `CartesianGridPlugin_Hypothesis*`, `CartesianGridPlugin_i.cxx` | SMESH algorithm, hypothesis, CORBA servants, factory (`libCartesianGridEngine`) |
+| `src/CartesianGridPlugin/CartesianGridPlugin_CartesianMED.*` | MED Cartesian file writer (MEDLoader) |
+| `src/CartesianGridPlugin/CartesianGridPluginBuilder.py` | Python API (`mesh.CartesianGrid()`, `ExportCartesianMED`) |
+| `src/CartesianGridPlugin/CartesianGridPluginExportDialog.py`, `src/GUI/smesh_plugins.py` | *Cartesian Grid MED Export* dialog and its SMESH plugins menu entry |
+| `src/GUI` | hypothesis dialog (`libCartesianGridPluginGUI`) |
+| `idl/CartesianGridPlugin_Algorithm.idl` | CORBA interfaces |
+| `resources/CartesianGridPlugin.xml` | meshers declaration for SMESH |
 | `tests` | C++ core tests and Python smesh tests, `data/four_materials.gdml` |
 | `misc` | GUI check list, memory measure, GDML test file generator |
 | `doc/index.html` | user page |
 
 ## Build
 
-With SAT, the product is `VOXELPLUGIN` (`products/VOXELPLUGIN.pyconf`). Its environment
-adds `VoxelPlugin` to `SMESH_MeshersList` and the resource directory to `SalomeAppConfig`.
+With SAT, the product is `CARTESIANGRIDPLUGIN` (`products/CARTESIANGRIDPLUGIN.pyconf`). Its environment
+adds `CartesianGridPlugin` to `SMESH_MeshersList` and the resource directory to `SalomeAppConfig`.
 
 By hand, from the application directory:
 
 ```bash
 source env_build.sh
-cmake -S SOURCES/VOXELPLUGIN -B BUILD/VOXELPLUGIN -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=$PWD/INSTALL/VOXELPLUGIN -DSALOME_BUILD_DOC=OFF
-make -C BUILD/VOXELPLUGIN -j12 install
+cmake -S SOURCES/CARTESIANGRIDPLUGIN -B BUILD/CARTESIANGRIDPLUGIN -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=$PWD/INSTALL/CARTESIANGRIDPLUGIN -DSALOME_BUILD_DOC=OFF
+make -C BUILD/CARTESIANGRIDPLUGIN -j12 install
 ```
 
 ## Tests
@@ -125,14 +125,14 @@ make -C BUILD/VOXELPLUGIN -j12 install
 ```bash
 # C++ core and hypothesis tests (build tree)
 source env_build.sh
-ctest --test-dir BUILD/VOXELPLUGIN -R TestVoxel
+ctest --test-dir BUILD/CARTESIANGRIDPLUGIN -R "Test(Classifier|Hypothesis|GridText|CartesianMED)"
 
 # Python tests (installed, SALOME environment)
 source env_launch.sh
-cd INSTALL/VOXELPLUGIN/bin/salome/test && ctest
+cd INSTALL/CARTESIANGRIDPLUGIN/bin/salome/test && ctest
 ```
 
-The SHAPER tests (`voxel_shaper_gdml`, `voxel_gdml_file`) need a SHAPER with the GDML
+The SHAPER tests (`cartesiangrid_shaper_gdml`, `cartesiangrid_gdml_file`) need a SHAPER with the GDML
 *Create material groups* feature; without it they print `SKIP` and pass.
 
 ## License

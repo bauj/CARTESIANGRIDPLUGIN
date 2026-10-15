@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<!DOCTYPE meshers PUBLIC "" "desktop.dtd">
+
+<meshers>
+
+<meshers-group name="CartesianGrid"
+               resources="CartesianGridPlugin"
+               server-lib="CartesianGridEngine"
+               gui-lib="CartesianGridPluginGUI">
+
+  <hypotheses>
+    <hypothesis type="CartesianGridParameters"
+                label-id="Cartesian Grid Parameters"
+                icon-id="cartesiangrid.png"
+                dim="3"/>
+  </hypotheses>
+
+  <algorithms>
+    <algorithm type="CartesianGrid_3D"
+               label-id="Cartesian Grid 3D"
+               icon-id="cartesiangrid.png"
+               hypos="CartesianGridParameters"
+               output="HEXA"
+               need-hyp="true"
+               dim="3"
+               support-submeshes="false">
+      <python-wrap>
+        <algo>CartesianGrid_3D=CartesianGrid()</algo>
+        <hypo>CartesianGridParameters=Grid()</hypo>
+      </python-wrap>
+    </algorithm>
+  </algorithms>
+</meshers-group>
+
+</meshers>

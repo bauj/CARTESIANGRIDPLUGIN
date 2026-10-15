@@ -1,1 +1,0 @@
-# VoxelPlugin Python package
