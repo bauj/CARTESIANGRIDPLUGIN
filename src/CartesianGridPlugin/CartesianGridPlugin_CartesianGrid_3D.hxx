@@ -56,6 +56,8 @@ public:
   double ExportProgress() const;
   //! Stops the running export (classification), which then throws "Export canceled"
   void CancelExport() { _computeCanceled = true; }
+  //! Sub-shape ids of the solids of the main shape, in TopExp::MapShapes order (classifier order)
+  static std::vector<int> SolidIds(SMESH_Mesh& mesh);
 
 private:
   //! zone of each cell from the hexahedra of the mesh volume groups named as theZones

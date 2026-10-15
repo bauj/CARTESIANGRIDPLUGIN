@@ -55,6 +55,8 @@ algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
 # or on any mesh with the Cartesian Grid 3D algorithm (smeshBuilder or CORBA mesh):
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder
 summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
+# one zone per solid, no group needed:
+summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="solids")
 ```
 
 - Sources:
@@ -65,6 +67,14 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
     the summary; their cells get no zone.
   - `mesh`: zones are the volume groups of the computed mesh whose name starts with the prefix.
     A cell in two zone groups is an error, so is a mesh not computed.
+  - `solids`: one zone per solid of the main shape, no group needed (the prefix is not used), same
+    classification as `geometry`. Zone name: the solid's name in the study (GEOM solid published under
+    the main shape), else its SHAPER sub-result name (e.g. a GDML volume; read from the SHAPER data
+    model, since SHAPERSTUDY does not publish sub-solids), else the main shape name for a single solid,
+    else `SOLID_<id>` (sub-shape id); a name used by several solids gets `_<id>` on each.
+    `CartesianGridPluginBuilder.SolidNames(mesh)` lists them. The summary starts with a `Warning:`
+    line per name cut to 60 characters and when SHAPER names cannot be read, and a `Note:` line for
+    unnamed solids and for each name shared by several solids.
 - File layout: one `MEDFileCMesh` named after the mesh, coordinate components `X`, `Y`, `Z`;
   cells numbered i fastest, then j, then k; cell family `0` = no zone (outside cells, solids
   in no zone group); zone groups sorted by name get families `-1, -2, ...` named
@@ -103,8 +113,9 @@ the Create Mesh steps.
   the study (ordinary mesh, normal Python dump).
 - **Grid**: the per-axis tabs of the *Cartesian Grid Parameters* dialog (same C++ widget), filled from
   the chosen mesh.
-- **Export**: MED file, zone prefix (`MAT_`); zones always come from the geometry groups. Without a
-  matching group the file holds the grid only (every cell in family 0), with a warning.
+- **Export**: MED file and zones: *Geometry groups named* a prefix (`MAT_`), or *Solids* (one zone per
+  solid, named as above). With groups and no matching group, the file holds the grid only (every cell in
+  family 0), with a warning.
 - **Also compute the SMESH mesh** (optional): computes the hexahedra and creates one mesh group per
   geometry group of solids (names already used are skipped). A SMESH mesh is unstructured (every node
   and hexahedron stored), much bigger than the Cartesian MED file; it is only for viewing.

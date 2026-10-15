@@ -39,6 +39,9 @@ module CartesianGridPlugin
     double GetExportProgress();
     //! stops the running export
     void   CancelExport();
+    //! sub-shape ids of the solids of the mesh main shape, in the order the export and the
+    //! classifier use (TopExp::MapShapes); for one zone per solid
+    LongArray GetSolidIds(in SMESH::SMESH_Mesh mesh) raises (SALOME::SALOME_Exception);
   };
 
   /*!

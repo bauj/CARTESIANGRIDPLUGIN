@@ -113,6 +113,14 @@ summary = WizardRun(mesh2, f5, False, "NOPE_").run()
 assert "no geometry group named NOPE_*" in summary and "grid only" in summary, summary
 assert medGroups(f5) == {}, medGroups(f5)
 
+# ---- zones from the solids (no group needed): unpublished solids are SOLID_<id>
+f6 = os.path.join(tmp, "solids.med")
+summary = WizardRun(mesh, f6, False, "IGNORED_", "solids").run()   # 20 cells per axis
+ids = {vol: geompy.GetSubShapeID(world, s) for vol, s in by_volume.items()}
+assert medGroups(f6) == {"SOLID_%d" % ids[8000000]: 7424, "SOLID_%d" % ids[512000]: 504,
+                         "SOLID_%d" % ids[8000]: 8, "SOLID_%d" % ids[64000]: 64}, medGroups(f6)
+assert summary.startswith("Note: 4 solid(s) without a name"), summary
+
 # ---- SHAPER geometry, as cartesiangrid_four_materials_shaper
 from salome.shaper import model
 import SHAPERSTUDY

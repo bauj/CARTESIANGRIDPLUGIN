@@ -112,6 +112,146 @@ def CreateGroupsOnGeometry(mesh):
             used.add(name)
     return created, skipped
 
+GEOM_SUBSHAPE_TYPE = 28   # GetType() of a sub-shape published under its main shape
+MAX_ZONE_NAME = 60        # MED family "FAM_<name>" must fit in 64 characters
+
+def _shaperSolidNames(shape, nbSolids):
+    """[name or None] per solid of a SHAPERSTUDY shape, in TopExp::MapShapes order, read from the
+    SHAPER data model (sub-results, e.g. GDML volume names: SHAPERSTUDY does not publish them);
+    None when the shape is not a SHAPER one or the SHAPER model is not loaded in this process"""
+    try:
+        import SHAPERSTUDY_ORB
+        obj = shape._narrow(SHAPERSTUDY_ORB.SHAPER_Object)
+        if obj is None:
+            return None
+        import ModelAPI
+        from GeomAPI import GeomAPI_Shape, GeomAPI_ShapeExplorer
+        # entry: "<part feature id>:<feature id>[:<result index>]", as model.featureStringId
+        ids = [int(i) for i in obj.GetEntry().split(":")]
+        root = ModelAPI.ModelAPI_Session.get().moduleDocument()
+        doc = None
+        for f in root.allFeatures():
+            if f.data().featureId() == ids[0] and f.getKind() == "Part":
+                doc = ModelAPI.modelAPI_ResultPart(f.firstResult()).partDoc()
+        if doc is None:
+            return None
+        feature = next((f for f in doc.allFeatures() if f.data().featureId() == ids[1]), None)
+        if feature is None:
+            return None
+        results = feature.results()
+        body = ModelAPI.modelAPI_ResultBody(results[ids[2]] if len(ids) > 2 else feature.firstResult())
+        if body is None or body.shape() is None:
+            return None
+    except Exception:
+        return None
+    # solids of the result shape in explorer order without repeats = TopExp::MapShapes order
+    solids = []
+    explorer = GeomAPI_ShapeExplorer(body.shape(), GeomAPI_Shape.SOLID)
+    while explorer.more():
+        solid = explorer.current()
+        explorer.next()
+        if not any(solid.isSame(s) for s in solids):
+            solids.append(solid)
+    if len(solids) != nbSolids:
+        return None
+    leaves = []
+    def collect(result):
+        if result.numberOfSubs() == 0:
+            leaves.append(result)
+        for i in range(result.numberOfSubs()):
+            collect(result.subResult(i))
+    collect(body)
+    names = [None] * nbSolids
+    for k, leaf in enumerate(leaves):
+        leafShape = leaf.shape()
+        if leafShape is None or not leafShape.isSolid():
+            continue
+        if k < nbSolids and leafShape.isSame(solids[k]):   # usual case: same order
+            names[k] = leaf.data().name()
+            continue
+        for rank, s in enumerate(solids):
+            if leafShape.isSame(s):
+                names[rank] = leaf.data().name()
+                break
+    return names
+
+def _listed(names, limit=10):
+    return ", ".join(names[:limit]) + (", ..." if len(names) > limit else "")
+
+def SolidNames(mesh):
+    """[(zone name, sub-shape id)] of the solids of the main shape of mesh (smeshBuilder.Mesh or
+    SMESH.SMESH_Mesh), in the export order. Name: the GEOM solid published under the main shape, the
+    SHAPER sub-result (SHAPER data model of this process), the main shape name when it is a single
+    solid, else SOLID_<id>; a name used by several solids gets _<id> on each; names cut to fit MED"""
+    return _solidZones(mesh)[0]
+
+def _solidZones(mesh):
+    """(SolidNames list, report lines: "Warning: ..." for cut names and unreadable SHAPER names,
+    "Note: ..." for unnamed solids and shared names)"""
+    import salome
+    import GEOM
+    smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
+    shape = smeshMesh.GetShapeToMesh()
+    ids = list(CartesianGridAlgorithm(smeshMesh).GetSolidIds(smeshMesh))
+    names = [None] * len(ids)
+    rank = {i: k for k, i in enumerate(ids)}
+    so = salome.ObjectToSObject(shape)
+    if so is not None:
+        it = salome.myStudy.NewChildIterator(so)
+        while it.More():
+            child = it.Value()
+            it.Next()
+            obj = child.GetObject()
+            obj = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
+            if obj is None or obj.GetType() != GEOM_SUBSHAPE_TYPE or obj.GetShapeType() != GEOM.SOLID:
+                continue
+            indices = [i for i in obj.GetSubShapeIndices() if i > 0]
+            if len(indices) == 1 and indices[0] in rank and child.GetName().strip():
+                names[rank[indices[0]]] = child.GetName().strip()
+    report = []
+    shaperNames = _shaperSolidNames(shape, len(ids))
+    if shaperNames:
+        names = [n or s for n, s in zip(names, shaperNames)]
+    elif _isShaperShape(shape):
+        report.append("Warning: the SHAPER solid names cannot be read (SHAPER is not loaded in this "
+                      "process, or the result changed since publication); unnamed solids get SOLID_<id>")
+    if len(ids) == 1 and not names[0] and so is not None:
+        names[0] = so.GetName()
+    names = [n.strip() if n and n.strip() else None for n in names]
+    count = {}
+    for n in names:
+        if n:
+            count[n] = count.get(n, 0) + 1
+    result, used, cut = [], set(), []
+    shared = {}
+    for n, i in zip(names, ids):
+        suffix = "" if n and count[n] == 1 else "_%d" % i
+        name = (n or "SOLID")[:MAX_ZONE_NAME - len(suffix)] + suffix
+        if name in used:   # a cut name, or a real name equal to a suffixed one
+            name = (n or "SOLID")[:MAX_ZONE_NAME - len("_%d" % i)] + "_%d" % i
+        used.add(name)
+        result.append((name, i))
+        if n and len(n) + len(suffix) > MAX_ZONE_NAME:
+            cut.append('"%s" -> "%s"' % (n, name))
+        if n and count[n] > 1:
+            shared.setdefault(n, []).append(name)
+    for c in cut:
+        report.append("Warning: zone name cut to %d characters (MED limit): %s" % (MAX_ZONE_NAME, c))
+    unnamed = [name for (name, i), n in zip(result, names) if not n]
+    if unnamed:
+        report.append("Note: %d solid(s) without a name in the study or in SHAPER, named SOLID_<id>: %s"
+                      % (len(unnamed), _listed(unnamed)))
+    for n, zones in shared.items():
+        report.append('Note: name "%s" used by %d solids, zones %s' % (n, len(zones), _listed(zones)))
+    return result, report
+
+def _isShaperShape(shape):
+    try:
+        import SHAPERSTUDY_ORB
+        return shape._narrow(SHAPERSTUDY_ORB.SHAPER_Object) is not None
+    except Exception:
+        return False
+
 def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file
     fileName as a Cartesian mesh, one cell group per zone; return the summary text.
@@ -119,14 +259,20 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     zonePrefix, each cell takes the zone of the solid containing its center, no mesh element is
     needed. source "mesh": zones are the volume groups of the computed mesh whose name starts
     with zonePrefix. A solid (geometry) or a cell (mesh) in two zone groups is an error. Without
-    any zone group the file holds the grid only (every cell in family 0), with a warning."""
-    if source not in ("geometry", "mesh"):
-        raise ValueError('source: "geometry" or "mesh", got %r' % (source,))
+    any zone group the file holds the grid only (every cell in family 0), with a warning.
+    source "solids": one zone per solid of the main shape, named by SolidNames (zonePrefix is not
+    used); no group is needed."""
+    if source not in ("geometry", "mesh", "solids"):
+        raise ValueError('source: "geometry", "mesh" or "solids", got %r' % (source,))
     smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
     algo = CartesianGridAlgorithm(smeshMesh)
     zones = []
     warning = ""
-    if source == "geometry":
+    if source == "solids":
+        solids, report = _solidZones(smeshMesh)
+        zones = [CartesianGridPlugin.ExportZone(name, [i]) for name, i in solids]
+        warning = "".join(line + "\n" for line in report)
+    elif source == "geometry":
         shapeName, groups = _geometryGroups(smeshMesh.GetShapeToMesh())
         for name, ids in groups:
             if name.startswith(zonePrefix):

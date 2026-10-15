@@ -79,3 +79,17 @@ char* CartesianGridPlugin_CartesianGrid_3D_i::ExportCartesianMED(SMESH::SMESH_Me
 
 CORBA::Double CartesianGridPlugin_CartesianGrid_3D_i::GetExportProgress() { return GetImpl()->ExportProgress(); }
 void CartesianGridPlugin_CartesianGrid_3D_i::CancelExport() { GetImpl()->CancelExport(); }
+
+CartesianGridPlugin::LongArray* CartesianGridPlugin_CartesianGrid_3D_i::GetSolidIds(SMESH::SMESH_Mesh_ptr mesh)
+{
+  SMESH_Mesh_i* meshI = SMESH::DownCast<SMESH_Mesh_i*>(mesh);
+  if (!meshI)
+    THROW_SALOME_CORBA_EXCEPTION("Not a mesh of this session", SALOME::BAD_PARAM);
+  meshI->Load();
+  const std::vector<int> ids = ::CartesianGridPlugin_CartesianGrid_3D::SolidIds(meshI->GetImpl());
+  CartesianGridPlugin::LongArray_var result = new CartesianGridPlugin::LongArray();
+  result->length((CORBA::ULong)ids.size());
+  for (std::size_t i = 0; i < ids.size(); ++i)
+    result[(CORBA::ULong)i] = ids[i];
+  return result._retn();
+}

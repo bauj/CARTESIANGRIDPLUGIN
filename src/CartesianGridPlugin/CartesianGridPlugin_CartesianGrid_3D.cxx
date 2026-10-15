@@ -436,6 +436,16 @@ void CartesianGridPlugin_CartesianGrid_3D::SetEventListener(SMESH_subMesh* subMe
   _EventListener::SetOn(subMesh, GetName());
 }
 
+std::vector<int> CartesianGridPlugin_CartesianGrid_3D::SolidIds(SMESH_Mesh& aMesh)
+{
+  TopTools_IndexedMapOfShape solids;
+  TopExp::MapShapes(aMesh.GetShapeToMesh(), TopAbs_SOLID, solids);
+  std::vector<int> ids;
+  for (int i = 1; i <= solids.Extent(); ++i)
+    ids.push_back(aMesh.GetMeshDS()->ShapeToIndex(solids(i)));
+  return ids;
+}
+
 double CartesianGridPlugin_CartesianGrid_3D::ExportProgress() const
 {
   return _nbSlabs > 0 ? std::min(1., (double)_nbDoneSlabs / _nbSlabs) : 0.;

@@ -25,6 +25,7 @@ public:
                            const CartesianGridPlugin::ExportZones& zones);
   CORBA::Double GetExportProgress();
   void CancelExport();
+  CartesianGridPlugin::LongArray* GetSolidIds(SMESH::SMESH_Mesh_ptr mesh);
 };
 
 #endif

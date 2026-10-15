@@ -26,11 +26,12 @@ def newMesh(geom, name):
 class WizardRun:
     """Compute (optional) and export of one mesh; GUI-free. run() returns the summary text or
     raises RuntimeError; progress() and cancel() may be called from another thread"""
-    def __init__(self, mesh, fileName, compute, zonePrefix):
+    def __init__(self, mesh, fileName, compute, zonePrefix, zoneSource="geometry"):
         self.mesh = mesh                 # smeshBuilder.Mesh
         self.fileName = fileName
         self.compute = compute
         self.zonePrefix = zonePrefix
+        self.zoneSource = zoneSource     # "geometry": groups named zonePrefix*, "solids": one zone per solid
         self.phase = None                # "compute", "export"
         self.canceled = False
         self.algo = Builder.CartesianGridAlgorithm(mesh)
@@ -78,7 +79,7 @@ class WizardRun:
             raise RuntimeError("Canceled")
         self.phase = "export"
         try:
-            parts.append(Builder.ExportCartesianMED(self.mesh, self.fileName, "geometry", self.zonePrefix))
+            parts.append(Builder.ExportCartesianMED(self.mesh, self.fileName, self.zoneSource, self.zonePrefix))
         except SALOME.SALOME_Exception as e:
             raise RuntimeError(e.details.text)
         except ValueError as e:
@@ -89,9 +90,9 @@ class WizardRun:
 
 # ---------------------------------------------------------------------------- dialog
 
-from qtsalome import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog,
+from qtsalome import (QButtonGroup, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog,
                       QGridLayout, QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox, QProgressBar,
-                      QPushButton, QTimer, QVBoxLayout, QWidget)
+                      QPushButton, QRadioButton, QTimer, QVBoxLayout, QWidget)
 
 COMPUTE_TIP = ("Creates the hexahedra in SMESH, to view the cells and the groups (one mesh group per "
                "group of solids of the geometry).\nA SMESH mesh is unstructured: every node and "
@@ -101,6 +102,11 @@ COMPUTE_TIP = ("Creates the hexahedra in SMESH, to view the cells and the groups
 PREFIX_TIP = ("Geometry groups whose name starts with this prefix are the zones (cell groups) of the "
               "MED file; empty: all groups.\nThe export works on the geometry: no SMESH cells are "
               "needed.")
+GROUPS_TIP = ("One zone per geometry group named with the prefix (e.g. the MAT_ material groups of a "
+              "GDML world);\neach cell takes the zone of the solid containing its center.")
+SOLIDS_TIP = ("One zone per solid, no group needed. Zone names: the solid's name in the study (GEOM "
+              "solid published under the shape)\nor in SHAPER (sub-result, e.g. GDML volume name); "
+              "SOLID_<id> for an unnamed solid; _<id> is added to a name used by several solids.")
 MESH_TIP = ("Meshes of this geometry using the Cartesian Grid 3D algorithm. The wizard updates the "
             "chosen one;\n\"New mesh\" creates another. Changing the grid of a computed mesh "
             "clears its cells (SMESH keeps meshes consistent with their hypotheses).")
@@ -205,10 +211,20 @@ class WizardDialog(QDialog):
         browse.setToolTip("Choose the MED file")
         browse.clicked.connect(self.browse)
         addRow(exportGrid, "MED file", hbox(self.file, browse))
+        self.groupsRadio = QRadioButton("Geometry groups named")
+        self.groupsRadio.setToolTip(GROUPS_TIP)
+        self.groupsRadio.setChecked(True)
         self.prefix = QLineEdit("MAT_")
         self.prefix.setToolTip(PREFIX_TIP)
         self.prefix.textChanged.connect(self.updateRunTip)
-        addRow(exportGrid, "Zone groups", self.prefix)
+        addRow(exportGrid, "Zones", hbox(self.groupsRadio, self.prefix))
+        self.solidsRadio = QRadioButton("Solids, one zone per solid (named as in the study or SHAPER)")
+        self.solidsRadio.setToolTip(SOLIDS_TIP)
+        exportGrid.addWidget(self.solidsRadio, exportGrid.rowCount(), 1)
+        self.zoneButtons = QButtonGroup(self)
+        self.zoneButtons.addButton(self.groupsRadio)
+        self.zoneButtons.addButton(self.solidsRadio)
+        self.groupsRadio.toggled.connect(self.zoneSourceChanged)
         self.computeBox = QCheckBox("Also compute the SMESH mesh")
         self.computeBox.setToolTip(COMPUTE_TIP)
         self.computeBox.toggled.connect(self.updateRunTip)
@@ -342,11 +358,21 @@ class WizardDialog(QDialog):
         else:
             steps.append("No SMESH cells are created (the mesh only holds the algorithm and the grid).")
         prefix = self.prefix.text()
-        steps.append("Write the Cartesian MED file %s: grid coordinates and one family per cell; zones = "
-                     "geometry groups %s." % (self.file.text().strip() or "(no file name)",
-                                              'named "%s*"' % prefix if prefix else "(all groups)"))
+        if self.zoneSource() == "solids":
+            zones = "one per solid, named as in the study or SHAPER"
+        else:
+            zones = "geometry groups %s" % ('named "%s*"' % prefix if prefix else "(all groups)")
+        steps.append("Write the Cartesian MED file %s: grid coordinates and one family per cell; zones = %s."
+                     % (self.file.text().strip() or "(no file name)", zones))
         # rich text: Qt wraps it
         self.runBtn.setToolTip("<b>Run</b><ol>%s</ol>" % "".join("<li>%s</li>" % html.escape(t) for t in steps))
+
+    def zoneSource(self):
+        return "solids" if self.solidsRadio.isChecked() else "geometry"
+
+    def zoneSourceChanged(self, *args):
+        self.prefix.setEnabled(self.groupsRadio.isChecked())
+        self.updateRunTip()
 
     def browse(self):
         f, _ = QFileDialog.getSaveFileName(self, "MED file", self.file.text(), "MED files (*.med)")
@@ -376,7 +402,8 @@ class WizardDialog(QDialog):
             else:
                 mesh = smesh.Mesh(corba)
             self.panel.store(Builder.CartesianGridParametersOf(mesh))
-            self.run = WizardRun(mesh, fileName, self.computeBox.isChecked(), self.prefix.text())
+            self.run = WizardRun(mesh, fileName, self.computeBox.isChecked(), self.prefix.text(),
+                                 self.zoneSource())
         except (RuntimeError, ValueError) as e:
             QMessageBox.warning(self, TITLE, str(e))
             return
