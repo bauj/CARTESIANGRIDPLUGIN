@@ -1,6 +1,7 @@
 SET(TEST_NAMES
   voxel_hypothesis
   voxel_four_materials
+  voxel_four_materials_shaper
   voxel_outside_cells
   voxel_errors
   voxel_shaper_gdml
