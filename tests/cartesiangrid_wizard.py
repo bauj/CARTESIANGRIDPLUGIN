@@ -107,9 +107,11 @@ msg = raises(WizardRun(bad, f3, True, "MAT_").run)
 assert "not computed" in msg, msg
 assert not os.path.exists(f3)
 
-# ---- export error: no zone group with the prefix
-msg = raises(WizardRun(mesh2, os.path.join(tmp, "none.med"), False, "NOPE_").run)
-assert "No geometry group named NOPE_*" in msg, msg
+# ---- no zone group with the prefix: grid only, with a warning
+f5 = os.path.join(tmp, "none.med")
+summary = WizardRun(mesh2, f5, False, "NOPE_").run()
+assert "no geometry group named NOPE_*" in summary and "grid only" in summary, summary
+assert medGroups(f5) == {}, medGroups(f5)
 
 # ---- SHAPER geometry, as cartesiangrid_four_materials_shaper
 from salome.shaper import model

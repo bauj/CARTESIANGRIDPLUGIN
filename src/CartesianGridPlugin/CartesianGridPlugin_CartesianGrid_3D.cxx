@@ -445,8 +445,6 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
                                                      const std::string& meshName, bool fromMesh,
                                                      std::vector<CartesianGridPlugin_ExportZone> zones)
 {
-  if (zones.empty())
-    throw SALOME_Exception("No zone group");
   std::sort(zones.begin(), zones.end(),
             [](const CartesianGridPlugin_ExportZone& a, const CartesianGridPlugin_ExportZone& b) { return a.name < b.name; });
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
@@ -467,7 +465,7 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
   std::vector<int> zoneOfCell(grid.NbCells(), 0);
   std::vector<int> solidsWithoutZone;
   std::size_t nbUnknown = 0;
-  if (!fromMesh)
+  if (!fromMesh && !zones.empty())   // no zone: every cell in family 0, no classification needed
   {
     // zones of the solids first: an overlap is reported before the long classification
     std::vector<int> zoneOfSolid(classifier.NbSolids(), 0);
@@ -492,7 +490,7 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
     for (std::size_t c = 0; c < owners.size(); ++c)
       zoneOfCell[c] = owners[c] < 0 ? 0 : zoneOfSolid[owners[c]];
   }
-  else
+  else if (fromMesh)
     zonesFromMesh(aMesh, grid, zones, zoneOfCell);   // Task 3
 
   const std::vector<double> coords[3] = { grid.coords[0], grid.coords[1], grid.coords[2] };
@@ -524,6 +522,8 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
       summary << (i ? ", #" : " #") << solidsWithoutZone[i];
     summary << "\n";
   }
+  if (zones.empty())
+    summary << "  warning: no zone group, the file holds the grid only (every cell in family 0)\n";
   if (!_coverageWarning.empty())
     summary << "  warning: " << _coverageWarning << "\n";
   if (nbUnknown > 0)

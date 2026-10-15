@@ -55,7 +55,8 @@ one zone per cell), far smaller than an unstructured export. A summary gives the
 <li><b>Zones from the geometry</b> (wizard, Python <code>source="geometry"</code>, no mesh element needed): zones are
 the geometry groups of the main shape whose name starts with the <i>zone prefix</i> (<code>MAT_</code> by default,
 empty: all groups); a cell takes the zone of the solid containing its center. A solid in two zone groups is an
-error; solids in no zone group are listed in the summary.</li>
+error; solids in no zone group are listed in the summary. Without any zone group the file holds the grid only
+(every cell in family 0) and the summary starts with a warning.</li>
 <li><b>Zones from the mesh</b> (Python only, <code>source="mesh"</code>): zones are the volume groups of the computed
 mesh whose name starts with the prefix. A cell in two zone groups is an error.</li>
 <li><b>File</b>: one Cartesian mesh named after the mesh, components X, Y, Z, cells numbered i fastest, then j, then k.

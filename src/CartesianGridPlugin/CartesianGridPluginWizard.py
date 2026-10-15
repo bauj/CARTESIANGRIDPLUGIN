@@ -418,7 +418,7 @@ class WizardDialog(QDialog):
         self.updateRunButton()
         salome.sg.updateObjBrowser()
         kind, text = self.result
-        if kind == "ok":
+        if kind == "ok" and "warning" not in text.lower():
             QMessageBox.information(self, TITLE, text)
         else:
             QMessageBox.warning(self, TITLE, text)

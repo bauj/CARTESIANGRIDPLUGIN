@@ -118,27 +118,29 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     source "geometry": zones are the geometry groups of the main shape whose name starts with
     zonePrefix, each cell takes the zone of the solid containing its center, no mesh element is
     needed. source "mesh": zones are the volume groups of the computed mesh whose name starts
-    with zonePrefix. A solid (geometry) or a cell (mesh) in two zone groups is an error."""
+    with zonePrefix. A solid (geometry) or a cell (mesh) in two zone groups is an error. Without
+    any zone group the file holds the grid only (every cell in family 0), with a warning."""
     if source not in ("geometry", "mesh"):
         raise ValueError('source: "geometry" or "mesh", got %r' % (source,))
     smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
     algo = CartesianGridAlgorithm(smeshMesh)
     zones = []
+    warning = ""
     if source == "geometry":
         shapeName, groups = _geometryGroups(smeshMesh.GetShapeToMesh())
         for name, ids in groups:
             if name.startswith(zonePrefix):
                 zones.append(CartesianGridPlugin.ExportZone(name, ids))
         if not zones:
-            raise ValueError("No geometry group named %s* under %s; its groups: %s"
-                             % (zonePrefix, shapeName, ", ".join(n for n, _ in groups) or "none"))
+            warning = ("Warning: no geometry group named %s* under %s (its groups: %s)\n"
+                       % (zonePrefix, shapeName, ", ".join(n for n, _ in groups) or "none"))
     else:
         for g in smeshMesh.GetGroups():
             if g.GetType() == SMESH.VOLUME and g.GetName().startswith(zonePrefix):
                 zones.append(CartesianGridPlugin.ExportZone(g.GetName(), []))
         if not zones:
-            raise ValueError("No mesh volume group named %s*" % zonePrefix)
-    return algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
+            warning = "Warning: no mesh volume group named %s*\n" % zonePrefix
+    return warning + algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
 
 class CartesianGrid_3D_Algorithm(Mesh_Algorithm):
     """Cartesian staircase grid, one hexahedron per cell owned by a solid.

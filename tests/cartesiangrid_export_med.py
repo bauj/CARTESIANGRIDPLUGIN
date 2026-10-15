@@ -105,8 +105,13 @@ assert m2.getMesh().getCoordsAt(2).getNumberOfTuples() == 5
 text = raises(SALOME.SALOME_Exception, algo.ExportCartesianMED, os.path.join(tmp, "x.med"),
               zonePrefix="")
 assert "MAT_IRON" in text and "other" in text, text            # IRON solid in two zone groups
-text = raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), zonePrefix="NOPE")
-assert "NOPE" in text and "World" in text and "MAT_AIR" in text, text   # names the shape and its groups
+# no zone group: grid only, every cell in family 0, warning naming the shape and its groups
+text = algo.ExportCartesianMED(os.path.join(tmp, "nozone.med"), zonePrefix="NOPE")
+assert "no geometry group named NOPE* under World" in text and "MAT_AIR" in text, text
+assert "grid only" in text and "no zone: 8000 cells" in text, text
+m0 = read(os.path.join(tmp, "nozone.med"))
+assert list(m0.getGroupsNames()) == [], m0.getGroupsNames()
+assert set(m0.getFamilyFieldAtLevel(0).getValues()) == {0}
 raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), source="bad")
 assert not os.path.exists(os.path.join(tmp, "x.med"))
 

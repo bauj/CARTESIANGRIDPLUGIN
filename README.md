@@ -103,7 +103,8 @@ the Create Mesh steps.
   the study (ordinary mesh, normal Python dump).
 - **Grid**: the per-axis tabs of the *Cartesian Grid Parameters* dialog (same C++ widget), filled from
   the chosen mesh.
-- **Export**: MED file, zone prefix (`MAT_`); zones always come from the geometry groups.
+- **Export**: MED file, zone prefix (`MAT_`); zones always come from the geometry groups. Without a
+  matching group the file holds the grid only (every cell in family 0), with a warning.
 - **Also compute the SMESH mesh** (optional): computes the hexahedra and creates one mesh group per
   geometry group of solids (names already used are skipped). A SMESH mesh is unstructured (every node
   and hexahedron stored), much bigger than the Cartesian MED file; it is only for viewing.
