@@ -96,7 +96,8 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
 *Mesh > SMESH plugins > Cartesian Grid Wizard*: geometry to Cartesian MED file in one dialog, without
 the Create Mesh steps.
 
-- **Geometry**: select a GEOM or SHAPER geometry in the object browser, press *Select*.
+- **Geometry**: the dialog is not modal; while its selection button (SMESH arrow icon) is pressed, the
+  field follows the GEOM or SHAPER geometry selected in the object browser.
 - **Mesh**: the Cartesian Grid meshes of that geometry, plus *New mesh* (with a name). The chosen mesh
   is updated; a new one is created with the Cartesian Grid 3D algorithm and its hypothesis and stays in
   the study (ordinary mesh, normal Python dump).

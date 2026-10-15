@@ -89,8 +89,8 @@ class WizardRun:
 # ---------------------------------------------------------------------------- dialog
 
 from qtsalome import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
-                      QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QProgressBar,
-                      QPushButton, Qt, QTimer, QVBoxLayout, QWidget)
+                      QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox, QProgressBar,
+                      QPushButton, QTimer, QVBoxLayout, QWidget)
 
 COMPUTE_TIP = ("Creates the hexahedra in SMESH, to view the cells and the groups (one mesh group per "
                "group of solids of the geometry).\nA SMESH mesh is unstructured: every node and "
@@ -138,12 +138,17 @@ class WizardDialog(QDialog):
         row = QHBoxLayout()
         self.geomField = QLineEdit()
         self.geomField.setReadOnly(True)
-        self.geomField.setPlaceholderText("Select a geometry (GEOM or SHAPER) and press Select")
-        selectBtn = QPushButton("Select")
-        selectBtn.setToolTip("Take the geometry selected in the object browser")
-        selectBtn.clicked.connect(self.selectGeometry)
+        self.geomField.setPlaceholderText("Select a geometry (GEOM or SHAPER) in the object browser")
+        # SMESH style selection button: while pressed, the field follows the object browser
+        self.selectBtn = QPushButton()
+        self.selectBtn.setIcon(QIcon(os.path.join(os.environ.get("SMESH_ROOT_DIR", ""), "share", "salome",
+                                                  "resources", "smesh", "select1.png")))
+        self.selectBtn.setCheckable(True)
+        self.selectBtn.setChecked(True)
+        self.selectBtn.setToolTip("While pressed, the geometry follows the selection in the object browser")
+        self.selectBtn.toggled.connect(self.selectionToggled)
+        row.addWidget(self.selectBtn)
         row.addWidget(self.geomField)
-        row.addWidget(selectBtn)
         geomLayout.addLayout(row)
         self.geomMessage = QLabel()
         self.geomMessage.setStyleSheet("color: red")
@@ -204,16 +209,38 @@ class WizardDialog(QDialog):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
-        self.selectGeometry(quiet=True)
+        self.geomEntry = None
+        import SalomePyQt   # GUI only
+        self.selection = SalomePyQt.SalomePyQt.getSelection()
+        self.selection.currentSelectionChanged.connect(self.selectionChanged)
+        self.selectGeometry()
+
+    def _disconnect(self, *args):
+        try:
+            self.selection.currentSelectionChanged.disconnect(self.selectionChanged)
+        except (RuntimeError, TypeError):
+            pass
 
     # ---- geometry and mesh
-    def selectGeometry(self, quiet=False):
+    def selectionToggled(self, on):
+        if on:
+            self.selectGeometry()
+
+    def selectionChanged(self):
+        if self.selectBtn.isChecked() and self.worker is None:
+            self.selectGeometry()
+
+    def selectGeometry(self):
         entry, geom, text = _selectedGeometry()
         if geom is None:
-            # at opening, nothing selected is not an error
-            self.geomMessage.setText("" if quiet else text)
+            # another kind of object selected: the geometry is kept; a hint while there is none
+            if self.geom is None:
+                self.geomMessage.setText("" if salome.sg.SelectedCount() == 0 else text)
             self.updateRunButton()
             return
+        if entry == self.geomEntry:
+            return
+        self.geomEntry = entry
         self.geom, self.geomName = geom, text
         self.geomField.setText(text)
         self.geomMessage.setText("")
@@ -265,6 +292,7 @@ class WizardDialog(QDialog):
 
     def updateRunButton(self):
         self.runBtn.setEnabled(self.geom is not None and self.worker is None)
+        self.selectBtn.setEnabled(self.worker is None)
 
     def browse(self):
         f, _ = QFileDialog.getSaveFileName(self, "MED file", self.file.text(), "MED files (*.med)")
@@ -352,14 +380,27 @@ class WizardDialog(QDialog):
             self.run.cancel()
             return
         QDialog.reject(self)
+        self._disconnect()
+        global _dialog
+        if _dialog is self:
+            _dialog = None
+        self.deleteLater()     # not modal: free it (and the C++ panel) when closed
+
+_dialog = None   # the open wizard: not modal, one at a time
 
 def run(context):
+    global _dialog
     parent = context.sg.getDesktop()
+    if _dialog is not None:
+        _dialog.show()
+        _dialog.raise_()
+        _dialog.activateWindow()
+        return
     try:
         dialog = WizardDialog(parent)
     except OSError as e:
         from salome.CartesianGridPlugin.CartesianGridPluginPanel import libraryPath
         QMessageBox.warning(parent, TITLE, "Cannot load the grid panel library %s:\n%s" % (libraryPath(), e))
         return
-    dialog.setAttribute(Qt.WA_DeleteOnClose)
-    dialog.exec_()
+    _dialog = dialog
+    dialog.show()
