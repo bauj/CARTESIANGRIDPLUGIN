@@ -22,6 +22,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QShortcut>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStyledItemDelegate>
@@ -52,8 +53,8 @@ namespace
 }
 
 CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParent, int theAxis)
-  : QFrame(theParent), myAxis(theAxis), myHasExtent(false), myExtent(0.),
-    myCoords{ 0., 1. }, myFunctions{ "1" }
+  : QFrame(theParent), myAxis(theAxis), myHasExtent(false), myExtent(0.), myMin(0.), myMax(0.),
+    myCoords{ 0., 1. }, myCoordsDefault(true), myFunctions{ "1" }
 {
   // mode
   QGroupBox* modeBox = new QGroupBox(tr("CARTESIANGRID_MODE"), this);
@@ -101,17 +102,21 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
   QHBoxLayout* coordLay = new QHBoxLayout(coordPage);
   myCoordList = new QListWidget(coordPage);
   myCoordList->setToolTip(tr("CARTESIANGRID_COORDINATES_TIP"));
+  myCoordList->setSelectionMode(QAbstractItemView::ExtendedSelection);
   coordLay->addWidget(myCoordList, 1);
   QVBoxLayout* coordBtnLay = new QVBoxLayout();
   myInsertCoordBtn = new QPushButton(tr("CARTESIANGRID_INSERT"), coordPage);
   myDeleteCoordBtn = new QPushButton(tr("CARTESIANGRID_DELETE"), coordPage);
   myPasteBtn = new QPushButton(tr("CARTESIANGRID_PASTE"), coordPage);
   myPasteBtn->setToolTip(tr("CARTESIANGRID_PASTE_TIP"));
+  myCopyBtn = new QPushButton(tr("CARTESIANGRID_COPY"), coordPage);
+  myCopyBtn->setToolTip(tr("CARTESIANGRID_COPY_TIP"));
   myInsertStep = new SMESHGUI_SpinBox(coordPage);
   myInsertStep->RangeStepAndValidator(-1e12, 1e12, 1., "length_precision");
   myInsertStep->SetValue(1.);
   coordBtnLay->addWidget(myInsertCoordBtn);
   coordBtnLay->addWidget(myDeleteCoordBtn);
+  coordBtnLay->addWidget(myCopyBtn);
   coordBtnLay->addWidget(myPasteBtn);
   coordBtnLay->addWidget(new QLabel(tr("CARTESIANGRID_INSERT_STEP"), coordPage));
   coordBtnLay->addWidget(myInsertStep);
@@ -160,6 +165,12 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
   connect(myInsertCoordBtn, SIGNAL(clicked()), this, SLOT(onInsertCoordinate()));
   connect(myDeleteCoordBtn, SIGNAL(clicked()), this, SLOT(onDeleteCoordinate()));
   connect(myPasteBtn, SIGNAL(clicked()), this, SLOT(onPasteCoordinates()));
+  connect(myCopyBtn, SIGNAL(clicked()), this, SLOT(onCopyCoordinates()));
+  // Ctrl+C / Ctrl+V on the list (not while a value is edited: the editor has its own)
+  connect(new QShortcut(QKeySequence::Copy, myCoordList, nullptr, nullptr, Qt::WidgetShortcut),
+          SIGNAL(activated()), this, SLOT(onCopyCoordinates()));
+  connect(new QShortcut(QKeySequence::Paste, myCoordList, nullptr, nullptr, Qt::WidgetShortcut),
+          SIGNAL(activated()), this, SLOT(onPasteCoordinates()));
   connect(myCoordList, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCoordinateEdited(QListWidgetItem*)));
   connect(myCoordList, SIGNAL(itemSelectionChanged()), this, SLOT(updateButtons()));
   connect(mySplitBtn, SIGNAL(clicked()), this, SLOT(onSplitRange()));
@@ -172,11 +183,28 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
   SetMode(CartesianGridPlugin_Hypothesis::NB_CELLS);
 }
 
-void CartesianGridPluginGUI_AxisTab::SetExtent(bool theHasExtent, double theExtent)
+void CartesianGridPluginGUI_AxisTab::SetExtent(bool theHasExtent, double theMin, double theMax)
 {
   myHasExtent = theHasExtent;
-  myExtent = theExtent;
+  myMin = theHasExtent ? theMin : 0.;
+  myMax = theHasExtent ? theMax : 0.;
+  myExtent = myMax - myMin;
+  applyShapeBounds();
   updateActual();
+}
+
+void CartesianGridPluginGUI_AxisTab::applyShapeBounds()
+{
+  if (myCoordsDefault && myHasExtent && myMax > myMin)
+  {
+    myCoords = { myMin, myMax };
+    fillCoordinates(-1);
+  }
+}
+
+void CartesianGridPluginGUI_AxisTab::coordinatesEdited()
+{
+  myCoordsDefault = false;
 }
 
 int CartesianGridPluginGUI_AxisTab::Mode() const
@@ -210,10 +238,12 @@ void CartesianGridPluginGUI_AxisTab::SetStep(double theStep)
   myStep->SetValue(theStep);
 }
 
-void CartesianGridPluginGUI_AxisTab::SetCoordinates(const std::vector<double>& theCoords)
+void CartesianGridPluginGUI_AxisTab::SetCoordinates(const std::vector<double>& theCoords, bool theIsDefault)
 {
   myCoords = theCoords;
+  myCoordsDefault = theIsDefault;
   fillCoordinates(-1);
+  applyShapeBounds();
   updateActual();
 }
 
@@ -343,20 +373,45 @@ void CartesianGridPluginGUI_AxisTab::onInsertCoordinate()
   if (index < 0)
     myMessage->setText(tr("CARTESIANGRID_COORDINATE_EXISTS"));
   else
+  {
     myMessage->clear();
+    coordinatesEdited();
+  }
   fillCoordinates(index);
   updateActual();
 }
 
 void CartesianGridPluginGUI_AxisTab::onDeleteCoordinate()
 {
-  const int row = myCoordList->currentRow();
-  if (CartesianGridPlugin_GridEdit::DeleteCoordinate(myCoords, row))
+  std::vector<int> rows;
+  for (QListWidgetItem* item : myCoordList->selectedItems())
+    rows.push_back(myCoordList->row(item));
+  if (rows.empty())
+    return;
+  const int first = *std::min_element(rows.begin(), rows.end());
+  if (CartesianGridPlugin_GridEdit::DeleteCoordinates(myCoords, rows))
   {
     myMessage->clear();
-    fillCoordinates(std::min(row, (int)myCoords.size() - 1));
+    coordinatesEdited();
+    myCoordList->clearSelection();
+    fillCoordinates(std::min(first, (int)myCoords.size() - 1));
     updateActual();
   }
+}
+
+void CartesianGridPluginGUI_AxisTab::onCopyCoordinates()
+{
+  // the selected values, all of them if none is selected
+  std::vector<int> rows;
+  for (QListWidgetItem* item : myCoordList->selectedItems())
+    rows.push_back(myCoordList->row(item));
+  std::sort(rows.begin(), rows.end());
+  std::vector<double> values;
+  for (int r : rows)
+    values.push_back(myCoords[r]);
+  if (values.empty())
+    values = myCoords;
+  QApplication::clipboard()->setText(QString::fromStdString(CartesianGridPlugin_GridText::FormatNumbers(values)));
 }
 
 void CartesianGridPluginGUI_AxisTab::onPasteCoordinates()
@@ -380,6 +435,7 @@ void CartesianGridPluginGUI_AxisTab::onPasteCoordinates()
   }
   myMessage->clear();
   myCoords = c;
+  coordinatesEdited();
   fillCoordinates(-1);
   updateActual();
 }
@@ -405,6 +461,7 @@ void CartesianGridPluginGUI_AxisTab::onCoordinateEdited(QListWidgetItem* theItem
   }
   myMessage->clear();
   myCoords = c;
+  coordinatesEdited();
   fillCoordinates((int)(std::find(myCoords.begin(), myCoords.end(), v) - myCoords.begin()));
   updateActual();
 }
@@ -473,7 +530,8 @@ void CartesianGridPluginGUI_AxisTab::onRangeEdited(QTreeWidgetItem* theItem, int
 
 void CartesianGridPluginGUI_AxisTab::updateButtons()
 {
-  myDeleteCoordBtn->setEnabled(myCoordList->currentRow() >= 0 && myCoords.size() > 2);
+  const int nbSelected = myCoordList->selectedItems().size();
+  myDeleteCoordBtn->setEnabled(nbSelected > 0 && myCoords.size() - nbSelected >= 2);
   myMergeBtn->setEnabled(myRangeTree->currentItem() && myFunctions.size() > 1);
 }
 

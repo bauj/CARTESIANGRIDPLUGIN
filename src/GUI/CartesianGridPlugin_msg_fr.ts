@@ -20,11 +20,13 @@
     <message><source>CARTESIANGRID_PASTE_NO_NUMBERS</source><translation>Coller : le presse-papiers ne contient pas une liste de nombres</translation></message>
     <message><source>CARTESIANGRID_COORDINATES</source><translation>Coordonnées</translation></message>
     <message><source>CARTESIANGRID_SPACING</source><translation>Espacement</translation></message>
-    <message><source>CARTESIANGRID_COORDINATES_TIP</source><translation>Coordonnées absolues des nœuds le long de l&apos;axe, toujours triées. Double-cliquer sur une valeur pour la modifier.</translation></message>
+    <message><source>CARTESIANGRID_COORDINATES_TIP</source><translation>Coordonnées absolues des nœuds le long de l&apos;axe, toujours triées ; par défaut les bornes de la forme. Double-cliquer sur une valeur pour la modifier ; Maj ou Ctrl + clic sélectionne plusieurs valeurs (Copier, Supprimer).</translation></message>
     <message><source>CARTESIANGRID_INSERT</source><translation>Insérer</translation></message>
     <message><source>CARTESIANGRID_DELETE</source><translation>Supprimer</translation></message>
+    <message><source>CARTESIANGRID_COPY</source><translation>Copier</translation></message>
+    <message><source>CARTESIANGRID_COPY_TIP</source><translation>Copier les valeurs sélectionnées (toutes si aucune n&apos;est sélectionnée) dans le presse-papiers, par ex. pour les coller dans un autre axe (Ctrl+C)</translation></message>
     <message><source>CARTESIANGRID_PASTE</source><translation>Coller</translation></message>
-    <message><source>CARTESIANGRID_PASTE_TIP</source><translation>Ajouter les nombres du presse-papiers (séparés par des espaces, des retours à la ligne, des virgules ou des points-virgules)</translation></message>
+    <message><source>CARTESIANGRID_PASTE_TIP</source><translation>Ajouter les nombres du presse-papiers (séparés par des espaces, des retours à la ligne, des virgules ou des points-virgules) (Ctrl+V)</translation></message>
     <message><source>CARTESIANGRID_INSERT_STEP</source><translation>Pas d&apos;insertion</translation></message>
     <message><source>CARTESIANGRID_FROM_T</source><translation>De t</translation></message>
     <message><source>CARTESIANGRID_TO_T</source><translation>À t</translation></message>

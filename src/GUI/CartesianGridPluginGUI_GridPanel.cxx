@@ -4,6 +4,7 @@
 
 #include "CartesianGridPluginGUI_AxisTab.h"
 #include "CartesianGridPlugin_Classifier.hxx"
+#include "CartesianGridPlugin_GridEdit.hxx"
 #include "CartesianGridPlugin_Hypothesis.hxx"
 
 #include <GEOMBase.h>
@@ -55,12 +56,12 @@ bool CartesianGridPluginGUI_GridPanel::SetShape(const QString& theEntry)
         CartesianGridPlugin_Classifier::BoundingBox(shape, mn, mx))
     {
       for (int a = 0; a < 3; ++a)
-        myTabs[a]->SetExtent(true, mx[a] - mn[a]);
+        myTabs[a]->SetExtent(true, mn[a], mx[a]);
       return true;
     }
   }
   for (int a = 0; a < 3; ++a)
-    myTabs[a]->SetExtent(false, 0.);
+    myTabs[a]->SetExtent(false, 0., 0.);
   return false;
 }
 
@@ -74,7 +75,9 @@ void CartesianGridPluginGUI_GridPanel::Load(CartesianGridPlugin::CartesianGridPl
     std::vector<double> c(coords->length());
     for (CORBA::ULong i = 0; i < coords->length(); ++i)
       c[i] = coords[i];
-    myTabs[a]->SetCoordinates(c);
+    // the list of a new hypothesis (0 1, not in mode Coordinates) shows the bounds of the shape instead
+    myTabs[a]->SetCoordinates(c, h->GetMode(a) != CartesianGridPlugin_Hypothesis::COORDINATES &&
+                                 CartesianGridPlugin_GridEdit::IsDefaultCoordinates(c));
     CartesianGridPlugin::StringArray_var funs;
     CartesianGridPlugin::DoubleArray_var points;
     h->GetSpacing(a, funs.out(), points.out());

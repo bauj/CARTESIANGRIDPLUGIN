@@ -49,6 +49,27 @@ namespace CartesianGridPlugin_GridEdit
     return true;
   }
 
+  //! removes the values at theIndices (any order, duplicates allowed); false, nothing removed, if an
+  //! index is out of range, none is given or fewer than 2 values would remain
+  inline bool DeleteCoordinates(std::vector<double>& theCoords, std::vector<int> theIndices)
+  {
+    std::sort(theIndices.begin(), theIndices.end());
+    theIndices.erase(std::unique(theIndices.begin(), theIndices.end()), theIndices.end());
+    if (theIndices.empty() || theIndices.front() < 0 || theIndices.back() >= (int)theCoords.size() ||
+        theCoords.size() - theIndices.size() < 2)
+      return false;
+    for (auto i = theIndices.rbegin(); i != theIndices.rend(); ++i)
+      theCoords.erase(theCoords.begin() + *i);
+    return true;
+  }
+
+  //! true if theCoords is the default list of a new hypothesis (0 1), replaced in the GUI by the
+  //! bounds of the shape while the axis is not in mode Coordinates
+  inline bool IsDefaultCoordinates(const std::vector<double>& theCoords)
+  {
+    return theCoords == std::vector<double>{ 0., 1. };
+  }
+
   inline double RangeStart(const std::vector<double>& thePoints, int theIndex)
   {
     return theIndex == 0 ? 0. : thePoints[theIndex - 1];

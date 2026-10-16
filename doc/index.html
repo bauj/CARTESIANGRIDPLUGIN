@@ -13,8 +13,9 @@ the deepest volume wins.</p>
 <li><b>Nb cells</b> n: spacing = extent / n;</li>
 <li><b>Step</b> s: n = max(1, round(extent / s)), spacing adjusted so the grid covers the bounding box exactly;</li>
 <li><b>Coordinates</b>: absolute node coordinates (sorted list, at least 2 distinct values; in the
-dialog: Insert adds the selected value plus the insert step, Paste adds numbers copied from a text
-file or a spreadsheet). The grid spans the first to the last value along that axis, whatever
+dialog: the list starts with the bounds of the shape, Insert adds the selected value plus the insert step, Copy
+puts the selected values (or all) in the clipboard, Paste adds numbers copied from another axis, a text file or a
+spreadsheet; Ctrl+C / Ctrl+V on the list, several values selected with Ctrl or Shift + click). The grid spans the first to the last value along that axis, whatever
 the bounding box: parts of solids beyond it are not meshed (warning);</li>
 <li><b>Spacing</b>: spacing functions f(t), as in Body Fitting (in the dialog: table of ranges
 <i>From t, To t, f(t)</i>; Insert splits the selected range, Delete merges it). Internal points, between 0 and 1, split the bounding

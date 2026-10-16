@@ -43,6 +43,10 @@ int main()
   CHECK(ParseNumbers(" 0 1,2.5\t, 10 ;\r\n12\n", c, err));
   CHECK((c == std::vector<double>{ 0, 1, 2.5, 10, 12 }));
   CHECK(ParseNumbers("-1e3", c, err) && c.size() == 1 && c[0] == -1000.);
+  // FormatNumbers: copied list read back exactly
+  const std::vector<double> copied = { -100, 0.1, 1. / 3., 2.5e-7 };
+  CHECK(FormatNumbers(copied) == "-100 0.1 0.3333333333333333 2.5e-07");
+  CHECK(ParseNumbers(FormatNumbers(copied), c, err) && c == copied);
   CHECK(ParseNumbers("+4", c, err) && c[0] == 4.);
   CHECK(ParseNumbers("", c, err) && c.empty());
   CHECK(!ParseNumbers("0 1 abc", c, err) && err.find("abc") != std::string::npos);
@@ -70,6 +74,12 @@ int main()
     CHECK(DeleteCoordinate(x, 1) && (x == std::vector<double>{ 0, 10 }));
     CHECK(!DeleteCoordinate(x, 0) && x.size() == 2);             // keeps 2 values
     CHECK(!DeleteCoordinate(x, 7));
+    x = { 0, 1, 2, 3, 4 };
+    CHECK(DeleteCoordinates(x, { 3, 1, 3 }) && (x == std::vector<double>{ 0, 2, 4 }));
+    CHECK(!DeleteCoordinates(x, { 0, 1 }) && x.size() == 3);     // keeps 2 values
+    CHECK(!DeleteCoordinates(x, { 0, 5 }) && x.size() == 3);     // out of range: nothing removed
+    CHECK(!DeleteCoordinates(x, {}));
+    CHECK(IsDefaultCoordinates({ 0, 1 }) && !IsDefaultCoordinates({ 0, 2 }));
 
     // spacing ranges: functions f[i] on [t(i), t(i+1)], t = 0, points..., 1
     std::vector<std::string> fn = { "1" };

@@ -41,6 +41,15 @@ namespace CartesianGridPlugin_GridText
     return std::string(buf, r.ptr);
   }
 
+  //! FormatNumber of each value, separated by spaces (read back by ParseNumbers)
+  inline std::string FormatNumbers(const std::vector<double>& theValues)
+  {
+    std::string text;
+    for (std::size_t i = 0; i < theValues.size(); ++i)
+      text += (i ? " " : "") + FormatNumber(theValues[i]);
+    return text;
+  }
+
   //! finite numbers separated by spaces, tabs, new lines, commas or semicolons (a column or
   //! row copied from a text file or a spreadsheet), order kept; false with theError on a bad one
   inline bool ParseNumbers(const std::string& theText, std::vector<double>& theValues,

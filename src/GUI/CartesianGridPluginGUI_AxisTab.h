@@ -31,8 +31,8 @@ class CartesianGridPluginGUI_AxisTab : public QFrame
 public:
   CartesianGridPluginGUI_AxisTab(QWidget* theParent, int theAxis);
 
-  //! extent of the mesh shape along the axis, for the actual cells
-  void SetExtent(bool theHasExtent, double theExtent);
+  //! bounds of the mesh shape along the axis, for the actual cells and the default coordinates
+  void SetExtent(bool theHasExtent, double theMin, double theMax);
 
   int  Mode() const;
   void SetMode(int theMode);
@@ -43,7 +43,8 @@ public:
   void   SetStep(double theStep);
 
   const std::vector<double>& Coordinates() const { return myCoords; }
-  void SetCoordinates(const std::vector<double>& theCoords);
+  //! theIsDefault: the list of a new hypothesis, shown as the bounds of the shape until edited
+  void SetCoordinates(const std::vector<double>& theCoords, bool theIsDefault = false);
 
   const std::vector<std::string>& SpacingFunctions() const { return myFunctions; }
   const std::vector<double>&      SpacingPoints() const { return myPoints; }
@@ -57,6 +58,7 @@ private slots:
   void onInsertCoordinate();
   void onDeleteCoordinate();
   void onPasteCoordinates();
+  void onCopyCoordinates();
   void onCoordinateEdited(QListWidgetItem* theItem);
   void onSplitRange();
   void onMergeRange();
@@ -67,6 +69,10 @@ private slots:
 private:
   void fillCoordinates(int theSelected);
   void fillRanges(int theSelected);
+  //! a default coordinate list becomes the bounds of the shape
+  void applyShapeBounds();
+  //! the coordinates changed by the user: no longer the default list
+  void coordinatesEdited();
   //! node coordinates of the current mode over [0, extent]; false with theError if invalid
   bool nodes(std::vector<double>& theNodes, std::string& theError) const;
 
@@ -79,6 +85,7 @@ private:
   QPushButton*             myInsertCoordBtn;
   QPushButton*             myDeleteCoordBtn;
   QPushButton*             myPasteBtn;
+  QPushButton*             myCopyBtn;
   SMESHGUI_SpinBox*        myInsertStep;
   QTreeWidget*             myRangeTree;
   QPushButton*             mySplitBtn;
@@ -87,7 +94,9 @@ private:
   QLabel*                  myMessage;
   bool                     myHasExtent;
   double                   myExtent;
+  double                   myMin, myMax; //!< bounds of the shape when myHasExtent
   std::vector<double>      myCoords;
+  bool                     myCoordsDefault; //!< myCoords not chosen by the user: bounds of the shape
   std::vector<std::string> myFunctions;
   std::vector<double>      myPoints;
 };

@@ -20,11 +20,13 @@
     <message><source>CARTESIANGRID_PASTE_NO_NUMBERS</source><translation>Paste: the clipboard does not hold a list of numbers</translation></message>
     <message><source>CARTESIANGRID_COORDINATES</source><translation>Coordinates</translation></message>
     <message><source>CARTESIANGRID_SPACING</source><translation>Spacing</translation></message>
-    <message><source>CARTESIANGRID_COORDINATES_TIP</source><translation>Absolute node coordinates along the axis, kept sorted. Double-click a value to edit it.</translation></message>
+    <message><source>CARTESIANGRID_COORDINATES_TIP</source><translation>Absolute node coordinates along the axis, kept sorted; by default the bounds of the shape. Double-click a value to edit it; Shift or Ctrl + click selects several values (Copy, Delete).</translation></message>
     <message><source>CARTESIANGRID_INSERT</source><translation>Insert</translation></message>
     <message><source>CARTESIANGRID_DELETE</source><translation>Delete</translation></message>
+    <message><source>CARTESIANGRID_COPY</source><translation>Copy</translation></message>
+    <message><source>CARTESIANGRID_COPY_TIP</source><translation>Copy the selected values (all of them if none is selected) to the clipboard, e.g. to paste them in another axis (Ctrl+C)</translation></message>
     <message><source>CARTESIANGRID_PASTE</source><translation>Paste</translation></message>
-    <message><source>CARTESIANGRID_PASTE_TIP</source><translation>Add the numbers of the clipboard (separated by spaces, new lines, commas or semicolons)</translation></message>
+    <message><source>CARTESIANGRID_PASTE_TIP</source><translation>Add the numbers of the clipboard (separated by spaces, new lines, commas or semicolons) (Ctrl+V)</translation></message>
     <message><source>CARTESIANGRID_INSERT_STEP</source><translation>Insert step</translation></message>
     <message><source>CARTESIANGRID_FROM_T</source><translation>From t</translation></message>
     <message><source>CARTESIANGRID_TO_T</source><translation>To t</translation></message>
