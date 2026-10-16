@@ -50,6 +50,13 @@ m.CartesianGrid().Grid(step=1e-9)
 ok, msg = compute_error(m)
 assert not ok and "cells along" in msg, msg
 assert m.NbElements() == 0
+
+# per-axis counts allowed but a total no array can hold (2e9^3 cells): error before allocating
+m = smesh.Mesh(two, "TooLarge")
+m.CartesianGrid().Grid(nbCells=2000000000)
+ok, msg = compute_error(m)
+assert not ok and "is too large to be stored" in msg, msg
+assert m.NbElements() == 0
 # ---- Python API errors: ValueError / TypeError with a message, before any CORBA call
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder
 
