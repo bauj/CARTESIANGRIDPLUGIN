@@ -50,4 +50,38 @@ m.CartesianGrid().Grid(step=1e-9)
 ok, msg = compute_error(m)
 assert not ok and "cells along" in msg, msg
 assert m.NbElements() == 0
+# ---- Python API errors: ValueError / TypeError with a message, before any CORBA call
+from salome.CartesianGridPlugin import CartesianGridPluginBuilder
+
+def py_error(exc, func, *args, **kwargs):
+    try:
+        func(*args, **kwargs)
+    except exc as e:
+        return str(e)
+    raise AssertionError("%s not raised" % exc.__name__)
+
+# mesh with another algorithm: no Cartesian Grid 3D to export with
+other = smesh.Mesh(sphere, "OtherAlgorithm")
+other.Segment()
+msg = py_error(ValueError, CartesianGridPluginBuilder.CartesianGridAlgorithm, other)
+assert "has no CartesianGrid_3D algorithm" in msg, msg
+msg = py_error(ValueError, CartesianGridPluginBuilder.ExportCartesianMED, other, "/nonexistent/x.med")
+assert "has no CartesianGrid_3D algorithm" in msg, msg
+
+# geometry groups of a shape not published in the study
+unpublished = geompy.MakeBoxDXDYDZ(10, 10, 10)
+corbaMesh = smesh.CreateMesh(unpublished)
+corbaMesh.AddHypothesis(unpublished, smesh.CreateHypothesis("CartesianGrid_3D", "libCartesianGridEngine.so"))
+msg = py_error(ValueError, CartesianGridPluginBuilder.ExportCartesianMED, corbaMesh, "/nonexistent/x.med")
+assert "not published in the study" in msg, msg
+
+# Grid() arguments
+algo = smesh.Mesh(sphere, "BadArguments").CartesianGrid()
+for kwargs, text in ((dict(coordinates=[[0, 1], None]), "coordinates: list of 3"),
+                     (dict(coordinates=[0, 1, 2]), "coordinates: list of 3"),
+                     (dict(spacing=["1", "1"]), "spacing: one value for all axes or a list of 3"),
+                     (dict(spacing=[5, None, None]), "spacing: a function string or (functions, internalPoints)"),
+                     (dict(spacing=[(["1"], 0.5), None, None]), "spacing: a function string")):
+    msg = py_error(TypeError, algo.Grid, **kwargs)
+    assert text in msg, (kwargs, msg)
 print("OK")
