@@ -74,7 +74,7 @@ f1 = os.path.join(tmp, "w1.med")
 summary = WizardRun(mesh, f1, False, "MAT_").run()
 assert medGroups(f1) == expected, medGroups(f1)
 assert mesh.NbVolumes() == 0
-assert "SMESH mesh computed" not in summary, summary
+assert summary.startswith("MED file: "), summary
 
 # ---- export with the SMESH mesh: groups of solids created, face group skipped
 f2 = os.path.join(tmp, "w2.med")
@@ -83,13 +83,15 @@ assert medGroups(f2) == expected
 assert mesh.NbVolumes() == 8000, mesh.NbVolumes()
 groups = meshGroups(mesh)
 assert groups == dict(expected, other=504), groups
-assert "Mesh groups created" in summary and "Group faces skipped: no cell" in summary, summary
+assert "  mesh groups from the geometry groups: " in summary and "  group faces skipped: no cell" in summary, summary
+assert summary.startswith("SMESH mesh: 8000 hexahedra\n"), summary
+assert "\n\nMED file: %s\n  zones: geometry groups named MAT_*\n  Cartesian grid 20 x 20 x 20 = 8000 cells\n" % f2 in summary, summary
 
 # ---- run again: no duplicate group
 again = WizardRun(mesh, f2, True, "MAT_")
 summary = again.run()
 assert meshGroups(mesh) == groups, meshGroups(mesh)
-assert "Group MAT_AIR skipped: a mesh group of that name exists" in summary, summary
+assert "  group MAT_AIR skipped: a mesh group of that name exists" in summary, summary
 
 # ---- a second mesh on the same geometry
 mesh2 = newMesh(world, "W2")
@@ -127,7 +129,8 @@ summary = WizardRun(mesh, f6, False, "IGNORED_", "solids").run()   # 20 cells pe
 ids = {vol: geompy.GetSubShapeID(world, s) for vol, s in by_volume.items()}
 assert medGroups(f6) == {"SOLID_%d" % ids[8000000]: 7424, "SOLID_%d" % ids[512000]: 504,
                          "SOLID_%d" % ids[8000]: 8, "SOLID_%d" % ids[64000]: 64}, medGroups(f6)
-assert summary.startswith("Note: 4 solid(s) without a name"), summary
+assert "  zones: one per solid, named as in the study or SHAPER\n" in summary, summary
+assert "\n  Note: 4 solid(s) without a name" in summary, summary
 
 # ---- report messages: level of the message box, French text from CartesianGridPlugin_msg_fr.qm
 from salome.CartesianGridPlugin.CartesianGridPluginWizard import reportLevel, reportText
@@ -140,8 +143,9 @@ assert fr.load(os.path.join(os.environ["CARTESIANGRIDPLUGIN_ROOT_DIR"], "share",
                             "cartesiangridplugin", "CartesianGridPlugin_msg_fr.qm"))
 french = reportText(again.parts,
                     lambda key: fr.translate("CartesianGridPluginWizard", "CARTESIANGRID_REPORT_" + key) or None)
-assert "Grille cartésienne 20 x 20 x 20 = 8000 mailles écrite dans " in french, french
-assert "Groupe MAT_AIR ignoré : un groupe de maillage de ce nom existe" in french, french
+assert french.startswith("Maillage SMESH : 8000 hexaèdres\n"), french
+assert "\nFichier MED : " in french and "\n  Grille cartésienne 20 x 20 x 20 = 8000 mailles\n" in french, french
+assert "  groupe MAT_AIR ignoré : un groupe de maillage de ce nom existe" in french, french
 assert "  MAT_IRON : 504 mailles" in french, french
 
 # ---- SHAPER geometry, as cartesiangrid_four_materials_shaper

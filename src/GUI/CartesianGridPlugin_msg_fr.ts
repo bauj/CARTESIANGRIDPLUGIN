@@ -107,16 +107,21 @@ qui ne stocke que les coordonnées de la grille et une famille par maille. Inuti
     <message><source>CARTESIANGRID_REPORT_WARN_GRID_ONLY</source><translation>  avertissement : aucun groupe de zone, le fichier ne contient que la grille (toutes les mailles dans la famille 0)</translation></message>
     <message><source>CARTESIANGRID_REPORT_WARN_COVERAGE</source><translation>  avertissement : les plans {0} couvrent [{1}, {2}], les solides s&apos;étendent sur [{3}, {4}] : les mailles hors des plans ne sont pas maillées</translation></message>
     <message><source>CARTESIANGRID_REPORT_WARN_UNKNOWN_CELLS</source><translation>  avertissement : {0} centre(s) de maille n&apos;ont pas pu être situés dans un solide et ont été considérés comme extérieurs, vérifier la géométrie</translation></message>
-    <message><source>CARTESIANGRID_REPORT_COMPUTED</source><translation>Maillage SMESH calculé : {0} hexaèdres</translation></message>
-    <message><source>CARTESIANGRID_REPORT_COMPUTE_WARNINGS</source><translation>Avertissements :
+    <message><source>CARTESIANGRID_REPORT_COMPUTED</source><translation>Maillage SMESH : {0} hexaèdres</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTE_WARNINGS</source><translation>  avertissements :
 {0}</translation></message>
-    <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>Groupes de maillage créés : {0}</translation></message>
-    <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>Groupe {0} ignoré : un groupe de maillage de ce nom existe</translation></message>
-    <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>Groupe {0} ignoré : aucune maille, ce n&apos;est pas un groupe de solides ou aucun centre de maille n&apos;est dans ses solides</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>  groupes de maillage issus des groupes de géométrie : {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>  groupe {0} ignoré : un groupe de maillage de ce nom existe</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>  groupe {0} ignoré : aucune maille, ce n&apos;est pas un groupe de solides ou aucun centre de maille n&apos;est dans ses solides</translation></message>
     <message><source>CARTESIANGRID_REPORT_ERR_COMPUTE_CANCELED</source><translation>Calcul annulé</translation></message>
     <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED</source><translation>Le maillage n&apos;est pas calculé</translation></message>
     <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED_DETAILS</source><translation>Le maillage n&apos;est pas calculé :
 {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_ERR_CANCELED</source><translation>Annulé</translation></message>
+    <message><source>CARTESIANGRID_REPORT_MED_FILE</source><translation>Fichier MED : {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_MED_ZONES_SOLIDS</source><translation>  zones : une par solide, nommée comme dans l&apos;étude ou SHAPER</translation></message>
+    <message><source>CARTESIANGRID_REPORT_MED_ZONES_GROUPS</source><translation>  zones : groupes de géométrie nommés {0}*</translation></message>
+    <message><source>CARTESIANGRID_REPORT_MED_ZONES_ALL</source><translation>  zones : tous les groupes de géométrie</translation></message>
+    <message><source>CARTESIANGRID_REPORT_MED_GRID</source><translation>  Grille cartésienne {0} x {1} x {2} = {3} mailles</translation></message>
 </context>
 </TS>
