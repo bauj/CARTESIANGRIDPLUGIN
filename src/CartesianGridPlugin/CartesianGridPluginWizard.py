@@ -142,34 +142,32 @@ def _translatedReport(key):
     text = tr("CARTESIANGRID_REPORT_" + key)
     return None if text == "CARTESIANGRID_REPORT_" + key else text
 
-_guiSwig = None
+def _guiHelper():
+    """salome.gui.helper (GUI only): selection through its own SALOMEGUI_Swig, as the other Python
+    plugins; salome.sg is a SalomeOutsideGUI without selection when salome_init() first ran
+    non-embedded in the GUI process"""
+    from salome.gui import helper
+    return helper
 
-def _gui():
-    """SALOMEGUI_Swig of the GUI. Not salome.sg: it is a SalomeOutsideGUI without selection when
-    salome_init() first ran non-embedded in the GUI process (e.g. a script importing geomBuilder)"""
-    global _guiSwig
-    if _guiSwig is None:
-        import libSALOME_Swig
-        _guiSwig = libSALOME_Swig.SALOMEGUI_Swig()
-    return _guiSwig
+def _selectionCount():
+    return _guiHelper().SalomeGUI.SelectedCount()
 
 def _updateObjBrowser():
-    import SalomePyQt   # GUI only
-    SalomePyQt.SalomePyQt.updateObjBrowser()
+    _guiHelper().sgPyQt.updateObjBrowser()
 
 def _selectedGeometry():
     """(entry, GEOM_Object, name) of the single selected geometry (GEOM or SHAPER), or
     (None, None, reason)"""
-    if _gui().SelectedCount() != 1:
+    sobj, entry = _guiHelper().getSObjectSelected()
+    if sobj is None:
         return None, None, tr("CARTESIANGRID_WIZ_SELECT_ONE")
-    entry = _gui().getSelected(0)
-    obj = salome.IDToObject(entry)
+    obj = sobj.GetObject()
     geom = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
     if geom is None:
         return None, None, tr("CARTESIANGRID_WIZ_NOT_GEOMETRY")
     if str(geom.GetShapeType()) not in ("SOLID", "COMPSOLID", "COMPOUND"):
         return None, None, tr("CARTESIANGRID_WIZ_NO_SOLID")
-    return entry, geom, salome.IDToSObject(entry).GetName()
+    return entry, geom, sobj.GetName()
 
 class WizardDialog(QDialog):
     def __init__(self, parent):
@@ -322,7 +320,7 @@ class WizardDialog(QDialog):
         if geom is None:
             # another kind of object selected: the geometry is kept; a hint while there is none
             if self.geom is None:
-                self.setGeomMessage("" if _gui().SelectedCount() == 0 else text)
+                self.setGeomMessage("" if _selectionCount() == 0 else text)
             self.updateRunButton()
             return
         if entry == self.geomEntry:
