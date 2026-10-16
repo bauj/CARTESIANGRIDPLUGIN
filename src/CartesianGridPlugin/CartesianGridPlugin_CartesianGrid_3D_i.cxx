@@ -6,11 +6,10 @@
 #include "SMESH_Gen_i.hxx"
 #include "SMESH_Mesh_i.hxx"
 
-#include <Standard_Failure.hxx>
-
 #include <SALOMEDS_wrap.hxx>
 #include <Utils_CorbaException.hxx>
-#include <Utils_SALOME_Exception.hxx>
+
+#include "SMESH_TryCatch.hxx"   // after the OCC headers (OCC_CATCH_SIGNALS)
 
 CartesianGridPlugin_CartesianGrid_3D_i::CartesianGridPlugin_CartesianGrid_3D_i(PortableServer::POA_ptr thePOA,
                                                ::SMESH_Gen*            theGenImpl)
@@ -52,26 +51,9 @@ char* CartesianGridPlugin_CartesianGrid_3D_i::ExportCartesianMED(SMESH::SMESH_Me
     z[i].name = zones[i].name.in();
     z[i].ids.assign(zones[i].ids.get_buffer(), zones[i].ids.get_buffer() + zones[i].ids.length());
   }
-  try
-  {
-    return CORBA::string_dup(GetImpl()->ExportCartesianMED(meshI->GetImpl(), file, meshName, z).c_str());
-  }
-  catch (const SALOME_Exception& ex)
-  {
-    THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::BAD_PARAM);
-  }
-  catch (const std::exception& ex)
-  {
-    THROW_SALOME_CORBA_EXCEPTION(ex.what(), SALOME::INTERNAL_ERROR);
-  }
-  catch (const Standard_Failure& ex)  // OCC failure of the classification
-  {
-    THROW_SALOME_CORBA_EXCEPTION(ex.GetMessageString(), SALOME::INTERNAL_ERROR);
-  }
-  catch (...)
-  {
-    THROW_SALOME_CORBA_EXCEPTION("Unknown error during the Cartesian MED export", SALOME::INTERNAL_ERROR);
-  }
+  SMESH_TRY;
+  return CORBA::string_dup(GetImpl()->ExportCartesianMED(meshI->GetImpl(), file, meshName, z).c_str());
+  SMESH_CATCH( SMESH::throwCorbaException );
   return nullptr;
 }
 
@@ -83,11 +65,13 @@ CartesianGridPlugin::LongArray* CartesianGridPlugin_CartesianGrid_3D_i::GetSolid
   SMESH_Mesh_i* meshI = SMESH::DownCast<SMESH_Mesh_i*>(mesh);
   if (!meshI)
     THROW_SALOME_CORBA_EXCEPTION("Not a mesh of this session", SALOME::BAD_PARAM);
+  CartesianGridPlugin::LongArray_var result = new CartesianGridPlugin::LongArray();
+  SMESH_TRY;
   meshI->Load();
   const std::vector<int> ids = ::CartesianGridPlugin_CartesianGrid_3D::SolidIds(meshI->GetImpl());
-  CartesianGridPlugin::LongArray_var result = new CartesianGridPlugin::LongArray();
   result->length((CORBA::ULong)ids.size());
   for (std::size_t i = 0; i < ids.size(); ++i)
     result[(CORBA::ULong)i] = ids[i];
+  SMESH_CATCH( SMESH::throwCorbaException );
   return result._retn();
 }
