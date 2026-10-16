@@ -13,7 +13,7 @@ import medcoupling as mc
 from salome.geom import geomBuilder
 from salome.smesh import smeshBuilder
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder as Builder
-from salome.CartesianGridPlugin.CartesianGridPluginWizard import WizardRun, newMesh
+from salome.CartesianGridPlugin.CartesianGridPluginWizard import WizardRun, newMesh, parametersOf
 geompy = geomBuilder.New()
 smesh = smeshBuilder.New()
 
@@ -123,6 +123,19 @@ assert badRun.parts[0][0][0] in ("NOT_COMPUTED", "NOT_COMPUTED_DETAILS"), badRun
 assert "\n\nMED file: " + f3 in summary, summary
 assert medGroups(f3) == {"MAT_X": 1000}, medGroups(f3)
 
+# ---- mesh with the algorithm but no hypothesis (possible in Create Mesh): the wizard adds one
+noHyp = smesh.Mesh(world, "NoHypothesis")
+noHyp.CartesianGrid()
+assert Builder.CartesianGridParametersOf(noHyp) is None
+assert "NoHypothesis" in [name for name, m in Builder.CartesianGridMeshesOn(world)]
+hyp = parametersOf(noHyp)
+assert hyp is not None and Builder.CartesianGridParametersOf(noHyp)._is_equivalent(hyp)
+assert parametersOf(noHyp)._is_equivalent(hyp)                 # not added twice
+hyp.SetNbCells(0, 20); hyp.SetNbCells(1, 20); hyp.SetNbCells(2, 20)
+f7 = os.path.join(tmp, "nohyp.med")
+WizardRun(noHyp, f7, False, "MAT_").run()
+assert medGroups(f7) == expected, medGroups(f7)
+
 # ---- no zone group with the prefix: grid only, with a warning
 f5 = os.path.join(tmp, "none.med")
 gridOnly = WizardRun(mesh2, f5, False, "NOPE_")
@@ -179,7 +192,7 @@ sworld = published[0] if isinstance(published, (list, tuple)) else published
 smesh3 = newMesh(sworld, "S1")
 assert [n for n, _ in Builder.CartesianGridMeshesOn(sworld)] == ["S1"]
 Builder.CartesianGridMeshesOn(world)       # GEOM meshes not mixed in
-assert [n for n, _ in Builder.CartesianGridMeshesOn(world)] == ["W1", "W2"]
+assert [n for n, _ in Builder.CartesianGridMeshesOn(world)] == ["W1", "W2", "NoHypothesis"]
 h3 = Builder.CartesianGridParametersOf(smesh3)
 for axis in range(3):
     h3.SetNbCells(axis, 20)

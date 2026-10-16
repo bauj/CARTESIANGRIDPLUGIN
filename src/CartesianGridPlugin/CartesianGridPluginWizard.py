@@ -21,6 +21,15 @@ def newMesh(geom, name):
     mesh.CartesianGrid().Grid()
     return mesh
 
+def parametersOf(mesh):
+    """the CartesianGridParameters hypothesis of mesh (smeshBuilder.Mesh); a mesh with the
+    CartesianGrid_3D algorithm but no hypothesis (possible in Create Mesh) gets a new one"""
+    hyp = Builder.CartesianGridParametersOf(mesh)
+    if hyp is None:
+        hyp = smeshBuilder.New().CreateHypothesis("CartesianGridParameters", "libCartesianGridEngine.so")
+        mesh.AddHypothesis(hyp)
+    return hyp
+
 # report messages of a run (Builder.REPORT_FORMATS + the compute ones), translated by the dialog
 # report of a run: a paragraph for the SMESH mesh (its groups always come from the geometry groups,
 # whatever the zones of the file), a paragraph for the MED file. The MED file is written first: it
@@ -476,7 +485,7 @@ class WizardDialog(QDialog):
                 mesh = newMesh(self.geom, name)
             else:
                 mesh = smesh.Mesh(corba)
-            self.panel.store(Builder.CartesianGridParametersOf(mesh))
+            self.panel.store(parametersOf(mesh))
             self.run = WizardRun(mesh, fileName, self.computeBox.isChecked(), self.prefix.text(),
                                  self.zoneSource())
         except (RuntimeError, ValueError) as e:
