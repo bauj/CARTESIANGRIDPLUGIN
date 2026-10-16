@@ -111,5 +111,10 @@ which stores only the grid coordinates and one family per cell. Not needed for t
     <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>Mesh groups created: {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>Group {0} skipped: a mesh group of that name exists</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>Group {0} skipped: no cell: not a group of solids, or no cell center in its solids</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_COMPUTE_CANCELED</source><translation>Computation canceled</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED</source><translation>The mesh is not computed</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED_DETAILS</source><translation>The mesh is not computed:
+{0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_CANCELED</source><translation>Canceled</translation></message>
 </context>
 </TS>

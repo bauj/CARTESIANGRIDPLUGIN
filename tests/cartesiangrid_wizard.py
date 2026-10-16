@@ -105,7 +105,13 @@ bad = newMesh(single, "Bad")
 Builder.CartesianGridParametersOf(bad).SetKeepOutsideCells(True)
 f3 = os.path.join(tmp, "bad.med")
 msg = raises(WizardRun(bad, f3, True, "MAT_").run)
-assert "not computed" in msg, msg
+assert msg.startswith("The mesh is not computed"), msg
+from salome.CartesianGridPlugin.CartesianGridPluginWizard import RunError
+try:
+    WizardRun(bad, f3, True, "MAT_").run()
+    assert False, "no error"
+except RunError as e:
+    assert e.key in ("ERR_NOT_COMPUTED", "ERR_NOT_COMPUTED_DETAILS"), e.key
 assert not os.path.exists(f3)
 
 # ---- no zone group with the prefix: grid only, with a warning

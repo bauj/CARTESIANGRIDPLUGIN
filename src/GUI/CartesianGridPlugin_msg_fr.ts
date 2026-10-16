@@ -111,5 +111,10 @@ qui ne stocke que les coordonnées de la grille et une famille par maille. Inuti
     <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>Groupes de maillage créés : {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>Groupe {0} ignoré : un groupe de maillage de ce nom existe</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>Groupe {0} ignoré : aucune maille, ce n&apos;est pas un groupe de solides ou aucun centre de maille n&apos;est dans ses solides</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_COMPUTE_CANCELED</source><translation>Calcul annulé</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED</source><translation>Le maillage n&apos;est pas calculé</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED_DETAILS</source><translation>Le maillage n&apos;est pas calculé :
+{0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ERR_CANCELED</source><translation>Annulé</translation></message>
 </context>
 </TS>

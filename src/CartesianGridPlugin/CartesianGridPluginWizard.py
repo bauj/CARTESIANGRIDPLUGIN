@@ -28,7 +28,18 @@ REPORT_FORMATS = dict(Builder.REPORT_FORMATS, **{
     "GROUPS_CREATED": ("info", "Mesh groups created: {0}"),
     "GROUP_EXISTS": ("info", "Group {0} skipped: " + Builder.SKIP_EXISTS),
     "GROUP_EMPTY": ("info", "Group {0} skipped: " + Builder.SKIP_EMPTY),
+    # errors of WizardRun (RunError); the details are the English SMESH compute errors
+    "ERR_COMPUTE_CANCELED": ("error", "Computation canceled"),
+    "ERR_NOT_COMPUTED": ("error", "The mesh is not computed"),
+    "ERR_NOT_COMPUTED_DETAILS": ("error", "The mesh is not computed:\n{0}"),
+    "ERR_CANCELED": ("error", "Canceled"),
 })
+
+class RunError(RuntimeError):
+    """error of WizardRun: str() is the English text, key and args the message of REPORT_FORMATS"""
+    def __init__(self, key, *args):
+        RuntimeError.__init__(self, REPORT_FORMATS[key][1].format(*args))
+        self.key, self.args_ = key, args
 
 class WizardRun:
     """Compute (optional) and export of one mesh; GUI-free. run() returns the summary text or
@@ -72,10 +83,10 @@ class WizardRun:
             self.phase = "compute"
             ok = self.mesh.Compute()
             if self.canceled:
-                raise RuntimeError("Computation canceled")
+                raise RunError("ERR_COMPUTE_CANCELED")
             errors = self._computeErrors()
             if not ok or self.mesh.NbVolumes() == 0:
-                raise RuntimeError("The mesh is not computed" + (":\n" + errors if errors else ""))
+                raise RunError("ERR_NOT_COMPUTED_DETAILS", errors) if errors else RunError("ERR_NOT_COMPUTED")
             parts.append([("COMPUTED", (self.mesh.NbVolumes(),))])
             if errors:
                 parts.append([("COMPUTE_WARNINGS", (errors,))])
@@ -85,7 +96,7 @@ class WizardRun:
             for name, reason in skipped:
                 parts.append([("GROUP_EXISTS" if reason == Builder.SKIP_EXISTS else "GROUP_EMPTY", (name,))])
         if self.canceled:
-            raise RuntimeError("Canceled")
+            raise RunError("ERR_CANCELED")
         self.phase = "export"
         try:
             parts.append(Builder.ExportCartesianMEDMessages(self.mesh, self.fileName, self.zoneSource,
@@ -434,6 +445,8 @@ class WizardDialog(QDialog):
         def work():
             try:
                 self.result = ("ok", self.run.run())
+            except RunError as e:
+                self.result = ("error", reportText([[(e.key, e.args_)]], _translatedReport))
             except RuntimeError as e:
                 self.result = ("error", str(e))
             except SALOME.SALOME_Exception as e:

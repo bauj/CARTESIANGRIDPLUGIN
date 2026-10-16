@@ -1,4 +1,4 @@
-# Translations of the wizard and of the export report: every key used by the wizard, the SMESH
+# Translations of the wizard, its errors and the export report: every key used by the wizard, the SMESH
 # plugins menu and the report is in CartesianGridPlugin_msg_en.qm and _fr.qm, the English text of
 # the report keys is the one of REPORT_FORMATS, and both languages use the same placeholders
 import os
@@ -25,7 +25,7 @@ def placeholders(text):
 
 # report: English as REPORT_FORMATS, French with the same placeholders
 for key, (level, english) in Wizard.REPORT_FORMATS.items():
-    assert level in ("info", "note", "warning"), (key, level)
+    assert level in ("info", "note", "warning", "error"), (key, level)
     en = translators["en"].translate(CONTEXT, "CARTESIANGRID_REPORT_" + key)
     fr = translators["fr"].translate(CONTEXT, "CARTESIANGRID_REPORT_" + key)
     assert en == english, (key, en, english)
