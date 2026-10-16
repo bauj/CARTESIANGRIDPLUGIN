@@ -75,6 +75,18 @@ corbaMesh.AddHypothesis(unpublished, smesh.CreateHypothesis("CartesianGrid_3D", 
 msg = py_error(ValueError, CartesianGridPluginBuilder.ExportCartesianMED, corbaMesh, "/nonexistent/x.med")
 assert "not published in the study" in msg, msg
 
+# export of a mesh with the algorithm but no hypothesis: engine error, no file
+import os, tempfile, SALOME
+noHyp = smesh.Mesh(sphere, "NoHypothesis")
+noHyp.CartesianGrid()
+fNoHyp = os.path.join(tempfile.mkdtemp(), "nohyp.med")
+try:
+    CartesianGridPluginBuilder.ExportCartesianMED(noHyp, fNoHyp)
+    raise AssertionError("export without hypothesis did not fail")
+except SALOME.SALOME_Exception as e:
+    assert "no Cartesian Grid Parameters hypothesis" in e.details.text, e.details.text
+assert not os.path.exists(fNoHyp)
+
 # Grid() arguments
 algo = smesh.Mesh(sphere, "BadArguments").CartesianGrid()
 for kwargs, text in ((dict(coordinates=[[0, 1], None]), "coordinates: list of 3"),
