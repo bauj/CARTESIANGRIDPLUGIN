@@ -169,6 +169,7 @@ bool CartesianGridPlugin_CartesianGrid_3D::prepare(SMESH_Mesh& aMesh, CartesianG
                                    bool classify)
 {
   _coverageWarning.clear();
+  _coverageGaps.clear();
   const TopoDS_Shape mainShape = aMesh.GetShapeToMesh();
   SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
 
@@ -209,6 +210,7 @@ bool CartesianGridPlugin_CartesianGrid_3D::prepare(SMESH_Mesh& aMesh, CartesianG
                  << " cells exceeds the limit of " << CartesianGridPlugin_Grid::MaxNbCells << " cells");
   grid = _hyp->MakeGrid(minC, maxC);
   _coverageWarning = _hyp->CoverageWarning(grid, minC, maxC);
+  _coverageGaps = _hyp->CoverageGaps(grid, minC, maxC);
   if (!classify)
     return true;
   if (forCompute)
@@ -519,26 +521,28 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
   std::vector<std::size_t> count(zones.size() + 1, 0);
   for (int z : zoneOfCell)
     ++count[z];
+  // report: one message per line, KEY<tab>arg<tab>...; the text is made by the Python builder
+  // (CartesianGridPluginBuilder.REPORT_FORMATS, translated in the wizard)
   std::ostringstream summary;
-  summary << "Cartesian grid " << grid.NbCells(0) << " x " << grid.NbCells(1) << " x " << grid.NbCells(2)
-          << " = " << grid.NbCells() << " cells written to " << file << "\n";
+  summary << "GRID\t" << grid.NbCells(0) << "\t" << grid.NbCells(1) << "\t" << grid.NbCells(2)
+          << "\t" << grid.NbCells() << "\t" << file << "\n";
   for (std::size_t z = 0; z < zones.size(); ++z)
-    summary << "  " << zones[z].name << ": " << count[z + 1] << " cells\n";
-  summary << "  no zone: " << count[0] << " cells\n";
+    summary << "ZONE_CELLS\t" << zones[z].name << "\t" << count[z + 1] << "\n";
+  summary << "NO_ZONE_CELLS\t" << count[0] << "\n";
   if (!solidsWithoutZone.empty())
   {
-    summary << "  solids in no zone group:";
+    summary << "SOLIDS_NO_ZONE\t";
     for (std::size_t i = 0; i < solidsWithoutZone.size(); ++i)
-      summary << (i ? ", #" : " #") << solidsWithoutZone[i];
+      summary << (i ? ", #" : "#") << solidsWithoutZone[i];
     summary << "\n";
   }
   if (zones.empty())
-    summary << "  warning: no zone group, the file holds the grid only (every cell in family 0)\n";
-  if (!_coverageWarning.empty())
-    summary << "  warning: " << _coverageWarning << "\n";
+    summary << "WARN_GRID_ONLY\n";
+  for (const CartesianGridPlugin_Hypothesis::CoverageGap& g : _coverageGaps)
+    summary << "WARN_COVERAGE\t" << "XYZ"[g.axis] << "\t" << g.first << "\t" << g.last << "\t" << g.min
+            << "\t" << g.max << "\n";
   if (nbUnknown > 0)
-    summary << "  warning: " << nbUnknown << " cell center(s) could not be located in a solid and"
-            << " were taken as outside it, check the geometry\n";
+    summary << "WARN_UNKNOWN_CELLS\t" << nbUnknown << "\n";
   return summary.str();
 }
 

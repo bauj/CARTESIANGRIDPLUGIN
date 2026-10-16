@@ -13,4 +13,5 @@ SET(TEST_NAMES
   cartesiangrid_export_med
   cartesiangrid_export_solids
   cartesiangrid_wizard
+  cartesiangrid_translations
 )

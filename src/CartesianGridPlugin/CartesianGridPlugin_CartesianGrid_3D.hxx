@@ -6,6 +6,7 @@
 #include "CartesianGridPlugin_Defs.hxx"
 
 #include "CartesianGridPlugin_Grid.hxx"
+#include "CartesianGridPlugin_Hypothesis.hxx"
 
 #include <SMESH_Algo.hxx>
 
@@ -14,7 +15,6 @@
 #include <vector>
 
 class CartesianGridPlugin_Classifier;
-class CartesianGridPlugin_Hypothesis;
 
 //! Zone of the Cartesian MED export: group name and, for the geometry source, the sub-shape
 //! ids (main shape indices, as SMESHDS_Mesh::ShapeToIndex) of its solids
@@ -77,6 +77,7 @@ private:
   std::atomic<int>              _nbDoneSlabs; //!< classified k-slabs of the current compute
   int                           _nbSlabs;
   std::string                   _coverageWarning; //!< set by prepare(): grid planes not covering the solids
+  std::vector<CartesianGridPlugin_Hypothesis::CoverageGap> _coverageGaps; //!< same, for the export report
 };
 
 #endif

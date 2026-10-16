@@ -114,6 +114,9 @@ int main()
     const std::string w = c.CoverageWarning(g, smn, smx);
     CHECK(w.find("X planes cover [0, 10], solids span [0, 20]") != std::string::npos);
     CHECK(w.find("Y") == std::string::npos);
+    const std::vector<CartesianGridPlugin_Hypothesis::CoverageGap> gaps = c.CoverageGaps(g, smn, smx);
+    CHECK(gaps.size() == 1 && gaps[0].axis == 0 && gaps[0].first == 0 && gaps[0].last == 10
+          && gaps[0].min == 0 && gaps[0].max == 20);
     const double inmx[3] = { 10, 10, 10 };
     CHECK(c.CoverageWarning(c.MakeGrid(smn, inmx), smn, inmx).empty());
   }

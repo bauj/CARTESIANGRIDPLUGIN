@@ -91,6 +91,10 @@ def CartesianGridParametersOf(mesh):
             return h._narrow(CartesianGridPlugin.CartesianGridPlugin_Hypothesis)
     return None
 
+# reasons of the groups skipped by CreateGroupsOnGeometry
+SKIP_EXISTS = "a mesh group of that name exists"
+SKIP_EMPTY = "no cell: not a group of solids, or no cell center in its solids"
+
 def CreateGroupsOnGeometry(mesh):
     """One volume group on geometry per group of the main shape of mesh (smeshBuilder.Mesh), named
     after it; names already used by a mesh group are skipped. Groups left empty (not a group of
@@ -101,12 +105,12 @@ def CreateGroupsOnGeometry(mesh):
     created, skipped = [], []
     for name, g in groups:
         if name in used:
-            skipped.append((name, "a mesh group of that name exists"))
+            skipped.append((name, SKIP_EXISTS))
             continue
         group = mesh.GroupOnGeom(g, name, SMESH.VOLUME)
         if group.Size() == 0:
             mesh.RemoveGroup(group)
-            skipped.append((name, "no cell: not a group of solids, or no cell center in its solids"))
+            skipped.append((name, SKIP_EMPTY))
         else:
             created.append(name)
             used.add(name)
@@ -186,8 +190,8 @@ def SolidNames(mesh):
     return _solidZones(mesh)[0]
 
 def _solidZones(mesh):
-    """(SolidNames list, report lines: "Warning: ..." for cut names and unreadable SHAPER names,
-    "Note: ..." for unnamed solids and shared names)"""
+    """(SolidNames list, report messages (key, args): warnings for cut names and unreadable SHAPER
+    names, notes for unnamed solids and shared names)"""
     import salome
     import GEOM
     smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
@@ -213,8 +217,7 @@ def _solidZones(mesh):
     if shaperNames:
         names = [n or s for n, s in zip(names, shaperNames)]
     elif _isShaperShape(shape):
-        report.append("Warning: the SHAPER solid names cannot be read (SHAPER is not loaded in this "
-                      "process, or the result changed since publication); unnamed solids get SOLID_<id>")
+        report.append(("WARN_SHAPER_NAMES", ()))
     if len(ids) == 1 and not names[0] and so is not None:
         names[0] = so.GetName()
     names = [n.strip() if n and n.strip() else None for n in names]
@@ -232,17 +235,16 @@ def _solidZones(mesh):
         used.add(name)
         result.append((name, i))
         if n and len(n) + len(suffix) > MAX_ZONE_NAME:
-            cut.append('"%s" -> "%s"' % (n, name))
+            cut.append((n, name))
         if n and count[n] > 1:
             shared.setdefault(n, []).append(name)
-    for c in cut:
-        report.append("Warning: zone name cut to %d characters (MED limit): %s" % (MAX_ZONE_NAME, c))
+    for n, name in cut:
+        report.append(("WARN_NAME_CUT", (MAX_ZONE_NAME, n, name)))
     unnamed = [name for (name, i), n in zip(result, names) if not n]
     if unnamed:
-        report.append("Note: %d solid(s) without a name in the study or in SHAPER, named SOLID_<id>: %s"
-                      % (len(unnamed), _listed(unnamed)))
+        report.append(("NOTE_UNNAMED", (len(unnamed), _listed(unnamed))))
     for n, zones in shared.items():
-        report.append('Note: name "%s" used by %d solids, zones %s' % (n, len(zones), _listed(zones)))
+        report.append(("NOTE_SHARED", (n, len(zones), _listed(zones))))
     return result, report
 
 def _isShaperShape(shape):
@@ -251,6 +253,32 @@ def _isShaperShape(shape):
         return shape._narrow(SHAPERSTUDY_ORB.SHAPER_Object) is not None
     except Exception:
         return False
+
+# report messages of the export: key -> (level "info" | "note" | "warning", English text with {0}...
+# for the arguments). The wizard shows them translated: CARTESIANGRID_REPORT_<key> in the .ts files
+REPORT_FORMATS = {
+    "WARN_SHAPER_NAMES": ("warning", "Warning: the SHAPER solid names cannot be read (SHAPER is not loaded in "
+                                     "this process, or the result changed since publication); unnamed solids get "
+                                     "SOLID_<id>"),
+    "WARN_NAME_CUT": ("warning", 'Warning: zone name cut to {0} characters (MED limit): "{1}" -> "{2}"'),
+    "NOTE_UNNAMED": ("note", "Note: {0} solid(s) without a name in the study or in SHAPER, named SOLID_<id>: {1}"),
+    "NOTE_SHARED": ("note", 'Note: name "{0}" used by {1} solids, zones {2}'),
+    "WARN_NO_GEOMETRY_GROUP": ("warning", "Warning: no geometry group named {0}* under {1} (its groups: {2})"),
+    "WARN_NO_MESH_GROUP": ("warning", "Warning: no mesh volume group named {0}*"),
+    "GRID": ("info", "Cartesian grid {0} x {1} x {2} = {3} cells written to {4}"),
+    "ZONE_CELLS": ("info", "  {0}: {1} cells"),
+    "NO_ZONE_CELLS": ("info", "  no zone: {0} cells"),
+    "SOLIDS_NO_ZONE": ("info", "  solids in no zone group: {0}"),
+    "WARN_GRID_ONLY": ("warning", "  warning: no zone group, the file holds the grid only (every cell in family 0)"),
+    "WARN_COVERAGE": ("warning", "  warning: {0} planes cover [{1}, {2}], solids span [{3}, {4}]: cells outside "
+                                 "are not meshed"),
+    "WARN_UNKNOWN_CELLS": ("warning", "  warning: {0} cell center(s) could not be located in a solid and were "
+                                      "taken as outside it, check the geometry"),
+}
+
+def ReportText(messages, formats=REPORT_FORMATS):
+    """English text of report messages [(key, args)], one line each"""
+    return "".join(formats[key][1].format(*args) + "\n" for key, args in messages)
 
 def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """Write the Cartesian grid of mesh (smeshBuilder.Mesh or SMESH.SMESH_Mesh) to the MED file
@@ -262,31 +290,38 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     any zone group the file holds the grid only (every cell in family 0), with a warning.
     source "solids": one zone per solid of the main shape, named by SolidNames (zonePrefix is not
     used); no group is needed."""
+    return ReportText(ExportCartesianMEDMessages(mesh, fileName, source, zonePrefix))
+
+def ExportCartesianMEDMessages(mesh, fileName, source="geometry", zonePrefix="MAT_"):
+    """ExportCartesianMED returning the report as messages [(key, args)] of REPORT_FORMATS"""
     if source not in ("geometry", "mesh", "solids"):
         raise ValueError('source: "geometry", "mesh" or "solids", got %r' % (source,))
     smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
     algo = CartesianGridAlgorithm(smeshMesh)
     zones = []
-    warning = ""
+    report = []
     if source == "solids":
         solids, report = _solidZones(smeshMesh)
         zones = [CartesianGridPlugin.ExportZone(name, [i]) for name, i in solids]
-        warning = "".join(line + "\n" for line in report)
     elif source == "geometry":
         shapeName, groups = _geometryGroups(smeshMesh.GetShapeToMesh())
         for name, ids in groups:
             if name.startswith(zonePrefix):
                 zones.append(CartesianGridPlugin.ExportZone(name, ids))
         if not zones:
-            warning = ("Warning: no geometry group named %s* under %s (its groups: %s)\n"
-                       % (zonePrefix, shapeName, ", ".join(n for n, _ in groups) or "none"))
+            report.append(("WARN_NO_GEOMETRY_GROUP", (zonePrefix, shapeName,
+                                                      ", ".join(n for n, _ in groups) or "-")))
     else:
         for g in smeshMesh.GetGroups():
             if g.GetType() == SMESH.VOLUME and g.GetName().startswith(zonePrefix):
                 zones.append(CartesianGridPlugin.ExportZone(g.GetName(), []))
         if not zones:
-            warning = "Warning: no mesh volume group named %s*\n" % zonePrefix
-    return warning + algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
+            report.append(("WARN_NO_MESH_GROUP", (zonePrefix,)))
+    text = algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
+    for line in text.splitlines():
+        fields = line.split("\t")
+        report.append((fields[0], tuple(fields[1:])))
+    return report
 
 class CartesianGrid_3D_Algorithm(Mesh_Algorithm):
     """Cartesian staircase grid, one hexahedron per cell owned by a solid.

@@ -50,7 +50,14 @@ public:
   //! node coordinates along axis for any mode; modes NB_CELLS/STEP: check NbCellsOfGrid() first
   std::vector<double> AxisCoordinates(int axis, double theMin, double theMax) const;
 
-  //! warning text for COORDINATES axes of theGrid not covering [theMin, theMax]; empty if none
+  //! COORDINATES axis of a grid whose planes [first, last] do not cover the solids [min, max]
+  struct CoverageGap { int axis; double first, last, min, max; };
+
+  //! COORDINATES axes of theGrid not covering [theMin, theMax]
+  std::vector<CoverageGap> CoverageGaps(const CartesianGridPlugin_Grid& theGrid, const double theMin[3],
+                                        const double theMax[3]) const;
+
+  //! warning text of CoverageGaps(); empty if none
   std::string CoverageWarning(const CartesianGridPlugin_Grid& theGrid, const double theMin[3],
                               const double theMax[3]) const;
 

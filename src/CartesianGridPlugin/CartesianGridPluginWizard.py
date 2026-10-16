@@ -21,9 +21,19 @@ def newMesh(geom, name):
     mesh.CartesianGrid().Grid()
     return mesh
 
+# report messages of a run (Builder.REPORT_FORMATS + the compute ones), translated by the dialog
+REPORT_FORMATS = dict(Builder.REPORT_FORMATS, **{
+    "COMPUTED": ("info", "SMESH mesh computed: {0} hexahedra"),
+    "COMPUTE_WARNINGS": ("warning", "Warnings:\n{0}"),
+    "GROUPS_CREATED": ("info", "Mesh groups created: {0}"),
+    "GROUP_EXISTS": ("info", "Group {0} skipped: " + Builder.SKIP_EXISTS),
+    "GROUP_EMPTY": ("info", "Group {0} skipped: " + Builder.SKIP_EMPTY),
+})
+
 class WizardRun:
     """Compute (optional) and export of one mesh; GUI-free. run() returns the summary text or
-    raises RuntimeError; progress() and cancel() may be called from another thread"""
+    raises RuntimeError; then parts holds the report as lists of messages (key, args) of
+    REPORT_FORMATS, one list per paragraph. progress() and cancel() may be called from another thread"""
     def __init__(self, mesh, fileName, compute, zonePrefix, zoneSource="geometry"):
         self.mesh = mesh                 # smeshBuilder.Mesh
         self.fileName = fileName
@@ -32,6 +42,7 @@ class WizardRun:
         self.zoneSource = zoneSource     # "geometry": groups named zonePrefix*, "solids": one zone per solid
         self.phase = None                # "compute", "export"
         self.canceled = False
+        self.parts = []
         self.algo = Builder.CartesianGridAlgorithm(mesh)
 
     def progress(self):
@@ -56,7 +67,7 @@ class WizardRun:
         return "\n".join(lines)
 
     def run(self):
-        parts = []
+        parts = self.parts = []
         if self.compute:
             self.phase = "compute"
             ok = self.mesh.Compute()
@@ -65,26 +76,44 @@ class WizardRun:
             errors = self._computeErrors()
             if not ok or self.mesh.NbVolumes() == 0:
                 raise RuntimeError("The mesh is not computed" + (":\n" + errors if errors else ""))
-            parts.append("SMESH mesh computed: %d hexahedra" % self.mesh.NbVolumes())
+            parts.append([("COMPUTED", (self.mesh.NbVolumes(),))])
             if errors:
-                parts.append("Warnings:\n" + errors)
+                parts.append([("COMPUTE_WARNINGS", (errors,))])
             created, skipped = Builder.CreateGroupsOnGeometry(self.mesh)
             if created:
-                parts.append("Mesh groups created: " + ", ".join(created))
+                parts.append([("GROUPS_CREATED", (", ".join(created),))])
             for name, reason in skipped:
-                parts.append("Group %s skipped: %s" % (name, reason))
+                parts.append([("GROUP_EXISTS" if reason == Builder.SKIP_EXISTS else "GROUP_EMPTY", (name,))])
         if self.canceled:
             raise RuntimeError("Canceled")
         self.phase = "export"
         try:
-            parts.append(Builder.ExportCartesianMED(self.mesh, self.fileName, self.zoneSource, self.zonePrefix))
+            parts.append(Builder.ExportCartesianMEDMessages(self.mesh, self.fileName, self.zoneSource,
+                                                            self.zonePrefix))
         except SALOME.SALOME_Exception as e:
             raise RuntimeError(e.details.text)
         except ValueError as e:
             raise RuntimeError(str(e))
         finally:
             self.phase = None
-        return "\n\n".join(parts)
+        return reportText(parts)
+
+def reportText(parts, translate=None):
+    """text of the report paragraphs of WizardRun.parts, a blank line between paragraphs;
+    translate(key) gives the text of a key, None for English"""
+    lines = []
+    for part in parts:
+        if lines:
+            lines.append("")
+        for key, args in part:
+            text = translate(key) if translate else None
+            lines.append((text or REPORT_FORMATS[key][1]).format(*args))
+    return "\n".join(lines)
+
+def reportLevel(parts):
+    """warning if a message of the report is a warning, else info"""
+    levels = {REPORT_FORMATS[key][0] for part in parts for key, _ in part}
+    return "warning" if "warning" in levels else "info"
 
 # ---------------------------------------------------------------------------- dialog
 
@@ -96,6 +125,11 @@ def tr(key):
     """text of key in CartesianGridPlugin_msg_<language>.ts (SALOME loads it at start)"""
     return QCoreApplication.translate("CartesianGridPluginWizard", key)
 
+
+def _translatedReport(key):
+    """text of a report message key in the .ts files, None if missing"""
+    text = tr("CARTESIANGRID_REPORT_" + key)
+    return None if text == "CARTESIANGRID_REPORT_" + key else text
 
 def _selectedGeometry():
     """(entry, GEOM_Object, name) of the single selected geometry (GEOM or SHAPER), or
@@ -428,7 +462,9 @@ class WizardDialog(QDialog):
         self.updateRunButton()
         salome.sg.updateObjBrowser()
         kind, text = self.result
-        if kind == "ok" and "warning" not in text.lower():
+        if kind == "ok":
+            text = reportText(self.run.parts, _translatedReport)
+        if kind == "ok" and reportLevel(self.run.parts) == "info":
             QMessageBox.information(self, tr("CARTESIANGRID_WIZ_TITLE"), text)
         else:
             QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), text)

@@ -92,5 +92,24 @@ which stores only the grid coordinates and one family per cell. Not needed for t
     <message><source>CARTESIANGRID_WIZ_EXPORTING</source><translation>Exporting %p%</translation></message>
     <message><source>CARTESIANGRID_WIZ_NO_LIBRARY</source><translation>Cannot load the grid panel library %s:
 %s</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_SHAPER_NAMES</source><translation>Warning: the SHAPER solid names cannot be read (SHAPER is not loaded in this process, or the result changed since publication); unnamed solids get SOLID_&lt;id&gt;</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NAME_CUT</source><translation>Warning: zone name cut to {0} characters (MED limit): &quot;{1}&quot; -&gt; &quot;{2}&quot;</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOTE_UNNAMED</source><translation>Note: {0} solid(s) without a name in the study or in SHAPER, named SOLID_&lt;id&gt;: {1}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOTE_SHARED</source><translation>Note: name &quot;{0}&quot; used by {1} solids, zones {2}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NO_GEOMETRY_GROUP</source><translation>Warning: no geometry group named {0}* under {1} (its groups: {2})</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NO_MESH_GROUP</source><translation>Warning: no mesh volume group named {0}*</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GRID</source><translation>Cartesian grid {0} x {1} x {2} = {3} cells written to {4}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ZONE_CELLS</source><translation>  {0}: {1} cells</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NO_ZONE_CELLS</source><translation>  no zone: {0} cells</translation></message>
+    <message><source>CARTESIANGRID_REPORT_SOLIDS_NO_ZONE</source><translation>  solids in no zone group: {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_GRID_ONLY</source><translation>  warning: no zone group, the file holds the grid only (every cell in family 0)</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_COVERAGE</source><translation>  warning: {0} planes cover [{1}, {2}], solids span [{3}, {4}]: cells outside are not meshed</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_UNKNOWN_CELLS</source><translation>  warning: {0} cell center(s) could not be located in a solid and were taken as outside it, check the geometry</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTED</source><translation>SMESH mesh computed: {0} hexahedra</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTE_WARNINGS</source><translation>Warnings:
+{0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>Mesh groups created: {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>Group {0} skipped: a mesh group of that name exists</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>Group {0} skipped: no cell: not a group of solids, or no cell center in its solids</translation></message>
 </context>
 </TS>

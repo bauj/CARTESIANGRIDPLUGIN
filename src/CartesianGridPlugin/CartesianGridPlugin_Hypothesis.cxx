@@ -201,10 +201,11 @@ std::vector<double> CartesianGridPlugin_Hypothesis::AxisCoordinates(int axis, do
   }
 }
 
-std::string CartesianGridPlugin_Hypothesis::CoverageWarning(const CartesianGridPlugin_Grid& theGrid,
-                                                    const double theMin[3], const double theMax[3]) const
+std::vector<CartesianGridPlugin_Hypothesis::CoverageGap>
+CartesianGridPlugin_Hypothesis::CoverageGaps(const CartesianGridPlugin_Grid& theGrid,
+                                             const double theMin[3], const double theMax[3]) const
 {
-  std::ostringstream w;
+  std::vector<CoverageGap> gaps;
   for (int a = 0; a < 3; ++a)
   {
     if (myMode[a] != COORDINATES || theGrid.coords[a].empty())
@@ -212,9 +213,18 @@ std::string CartesianGridPlugin_Hypothesis::CoverageWarning(const CartesianGridP
     const double tol = 1e-9 * (theMax[a] - theMin[a]);
     const double first = theGrid.coords[a].front(), last = theGrid.coords[a].back();
     if (first > theMin[a] + tol || last < theMax[a] - tol)
-      w << theAxisNames[a] << " planes cover [" << first << ", " << last << "], solids span ["
-        << theMin[a] << ", " << theMax[a] << "]: cells outside are not meshed. ";
+      gaps.push_back({ a, first, last, theMin[a], theMax[a] });
   }
+  return gaps;
+}
+
+std::string CartesianGridPlugin_Hypothesis::CoverageWarning(const CartesianGridPlugin_Grid& theGrid,
+                                                    const double theMin[3], const double theMax[3]) const
+{
+  std::ostringstream w;
+  for (const CoverageGap& g : CoverageGaps(theGrid, theMin, theMax))
+    w << theAxisNames[g.axis] << " planes cover [" << g.first << ", " << g.last << "], solids span ["
+      << g.min << ", " << g.max << "]: cells outside are not meshed. ";
   return w.str();
 }
 

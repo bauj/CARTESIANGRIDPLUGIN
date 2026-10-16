@@ -92,5 +92,24 @@ qui ne stocke que les coordonnées de la grille et une famille par maille. Inuti
     <message><source>CARTESIANGRID_WIZ_EXPORTING</source><translation>Export %p%</translation></message>
     <message><source>CARTESIANGRID_WIZ_NO_LIBRARY</source><translation>Impossible de charger la bibliothèque du panneau de grille %s :
 %s</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_SHAPER_NAMES</source><translation>Avertissement : les noms des solides SHAPER ne peuvent pas être lus (SHAPER n&apos;est pas chargé dans ce processus, ou le résultat a changé depuis sa publication) ; les solides sans nom reçoivent SOLID_&lt;id&gt;</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NAME_CUT</source><translation>Avertissement : nom de zone coupé à {0} caractères (limite MED) : « {1} » -&gt; « {2} »</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOTE_UNNAMED</source><translation>Remarque : {0} solide(s) sans nom dans l&apos;étude ni dans SHAPER, nommé(s) SOLID_&lt;id&gt; : {1}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOTE_SHARED</source><translation>Remarque : le nom « {0} » est porté par {1} solides, zones {2}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NO_GEOMETRY_GROUP</source><translation>Avertissement : aucun groupe de géométrie nommé {0}* sous {1} (ses groupes : {2})</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_NO_MESH_GROUP</source><translation>Avertissement : aucun groupe de volumes du maillage nommé {0}*</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GRID</source><translation>Grille cartésienne {0} x {1} x {2} = {3} mailles écrite dans {4}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_ZONE_CELLS</source><translation>  {0} : {1} mailles</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NO_ZONE_CELLS</source><translation>  sans zone : {0} mailles</translation></message>
+    <message><source>CARTESIANGRID_REPORT_SOLIDS_NO_ZONE</source><translation>  solides dans aucun groupe de zone : {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_GRID_ONLY</source><translation>  avertissement : aucun groupe de zone, le fichier ne contient que la grille (toutes les mailles dans la famille 0)</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_COVERAGE</source><translation>  avertissement : les plans {0} couvrent [{1}, {2}], les solides s&apos;étendent sur [{3}, {4}] : les mailles hors des plans ne sont pas maillées</translation></message>
+    <message><source>CARTESIANGRID_REPORT_WARN_UNKNOWN_CELLS</source><translation>  avertissement : {0} centre(s) de maille n&apos;ont pas pu être situés dans un solide et ont été considérés comme extérieurs, vérifier la géométrie</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTED</source><translation>Maillage SMESH calculé : {0} hexaèdres</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTE_WARNINGS</source><translation>Avertissements :
+{0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>Groupes de maillage créés : {0}</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>Groupe {0} ignoré : un groupe de maillage de ce nom existe</translation></message>
+    <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>Groupe {0} ignoré : aucune maille, ce n&apos;est pas un groupe de solides ou aucun centre de maille n&apos;est dans ses solides</translation></message>
 </context>
 </TS>

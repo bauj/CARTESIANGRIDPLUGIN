@@ -86,7 +86,8 @@ assert groups == dict(expected, other=504), groups
 assert "Mesh groups created" in summary and "Group faces skipped: no cell" in summary, summary
 
 # ---- run again: no duplicate group
-summary = WizardRun(mesh, f2, True, "MAT_").run()
+again = WizardRun(mesh, f2, True, "MAT_")
+summary = again.run()
 assert meshGroups(mesh) == groups, meshGroups(mesh)
 assert "Group MAT_AIR skipped: a mesh group of that name exists" in summary, summary
 
@@ -109,7 +110,8 @@ assert not os.path.exists(f3)
 
 # ---- no zone group with the prefix: grid only, with a warning
 f5 = os.path.join(tmp, "none.med")
-summary = WizardRun(mesh2, f5, False, "NOPE_").run()
+gridOnly = WizardRun(mesh2, f5, False, "NOPE_")
+summary = gridOnly.run()
 assert "no geometry group named NOPE_*" in summary and "grid only" in summary, summary
 assert medGroups(f5) == {}, medGroups(f5)
 
@@ -120,6 +122,21 @@ ids = {vol: geompy.GetSubShapeID(world, s) for vol, s in by_volume.items()}
 assert medGroups(f6) == {"SOLID_%d" % ids[8000000]: 7424, "SOLID_%d" % ids[512000]: 504,
                          "SOLID_%d" % ids[8000]: 8, "SOLID_%d" % ids[64000]: 64}, medGroups(f6)
 assert summary.startswith("Note: 4 solid(s) without a name"), summary
+
+# ---- report messages: level of the message box, French text from CartesianGridPlugin_msg_fr.qm
+from salome.CartesianGridPlugin.CartesianGridPluginWizard import reportLevel, reportText
+from qtsalome import QCoreApplication, QTranslator
+assert reportLevel(again.parts) == "info", again.parts           # groups created / skipped
+assert reportLevel(gridOnly.parts) == "warning", gridOnly.parts
+app = QCoreApplication.instance() or QCoreApplication([])
+fr = QTranslator()
+assert fr.load(os.path.join(os.environ["CARTESIANGRIDPLUGIN_ROOT_DIR"], "share", "salome", "resources",
+                            "cartesiangridplugin", "CartesianGridPlugin_msg_fr.qm"))
+french = reportText(again.parts,
+                    lambda key: fr.translate("CartesianGridPluginWizard", "CARTESIANGRID_REPORT_" + key) or None)
+assert "Grille cartésienne 20 x 20 x 20 = 8000 mailles écrite dans " in french, french
+assert "Groupe MAT_AIR ignoré : un groupe de maillage de ce nom existe" in french, french
+assert "  MAT_IRON : 504 mailles" in french, french
 
 # ---- SHAPER geometry, as cartesiangrid_four_materials_shaper
 from salome.shaper import model
