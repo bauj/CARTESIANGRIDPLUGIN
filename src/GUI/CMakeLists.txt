@@ -58,6 +58,7 @@ SET(CartesianGridPluginGUI_SOURCES
 SET(_ts_RESOURCES
   CartesianGridPlugin_images.ts
   CartesianGridPlugin_msg_en.ts
+  CartesianGridPlugin_msg_fr.ts
 )
 
 ADD_LIBRARY(CartesianGridPluginGUI ${CartesianGridPluginGUI_SOURCES})
