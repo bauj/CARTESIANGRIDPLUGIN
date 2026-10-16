@@ -99,7 +99,6 @@ qui ne stocke que les coordonnées de la grille et une famille par maille. Inuti
     <message><source>CARTESIANGRID_REPORT_NOTE_UNNAMED</source><translation>Remarque : {0} solide(s) sans nom dans l&apos;étude ni dans SHAPER, nommé(s) SOLID_&lt;id&gt; : {1}</translation></message>
     <message><source>CARTESIANGRID_REPORT_NOTE_SHARED</source><translation>Remarque : le nom « {0} » est porté par {1} solides, zones {2}</translation></message>
     <message><source>CARTESIANGRID_REPORT_WARN_NO_GEOMETRY_GROUP</source><translation>Avertissement : aucun groupe de géométrie nommé {0}* sous {1} (ses groupes : {2})</translation></message>
-    <message><source>CARTESIANGRID_REPORT_WARN_NO_MESH_GROUP</source><translation>Avertissement : aucun groupe de volumes du maillage nommé {0}*</translation></message>
     <message><source>CARTESIANGRID_REPORT_GRID</source><translation>Grille cartésienne {0} x {1} x {2} = {3} mailles écrite dans {4}</translation></message>
     <message><source>CARTESIANGRID_REPORT_ZONE_CELLS</source><translation>  {0} : {1} mailles</translation></message>
     <message><source>CARTESIANGRID_REPORT_NO_ZONE_CELLS</source><translation>  sans zone : {0} mailles</translation></message>

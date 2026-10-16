@@ -54,7 +54,7 @@ one zone per cell): far smaller than an unstructured MED export.
 algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
 # or on any mesh with the Cartesian Grid 3D algorithm (smeshBuilder or CORBA mesh):
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder
-summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="mesh")
+summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med")
 # one zone per solid, no group needed:
 summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source="solids")
 ```
@@ -65,8 +65,6 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
     with the prefix; each cell takes the zone of the solid containing its center (same rule
     as Compute). A solid in two zone groups is an error. Solids in no zone group are listed in
     the summary; their cells get no zone.
-  - `mesh`: zones are the volume groups of the computed mesh whose name starts with the prefix.
-    A cell in two zone groups is an error, so is a mesh not computed.
   - `solids`: one zone per solid of the main shape, no group needed (the prefix is not used), same
     classification as `geometry`. Zone name: the solid's name in the study (GEOM solid published under
     the main shape), else its SHAPER sub-result name (e.g. a GDML volume; read from the SHAPER data

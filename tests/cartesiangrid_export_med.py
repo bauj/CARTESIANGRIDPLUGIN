@@ -115,6 +115,7 @@ m0 = read(os.path.join(tmp, "nozone.med"))
 assert list(m0.getGroupsNames()) == [], m0.getGroupsNames()
 assert set(m0.getFamilyFieldAtLevel(0).getValues()) == {0}
 raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), source="bad")
+raises(ValueError, algo.ExportCartesianMED, os.path.join(tmp, "x.med"), source="mesh")   # removed source
 assert not os.path.exists(os.path.join(tmp, "x.med"))
 
 # ---- progress and cancel of a long geometry export: no file, next export works
@@ -151,38 +152,6 @@ assert "canceled" in result.get("error", ""), result
 assert not os.path.exists(f3)
 algo3.Grid(nbCells=10)
 assert "1000 cells" in algo3.ExportCartesianMED(f3)
-# ---- mesh source: zones of the mesh volume groups, same families as the geometry source
-fMesh = os.path.join(tmp, "mesh.med")
-summary = algo.ExportCartesianMED(fMesh, source="mesh")    # groups on geometry created above
-assert "MAT_IRON: 504 cells" in summary, summary
-mm = read(fMesh)
-assert groupCounts(mm) == expected, groupCounts(mm)
-assert mm.getFamilyFieldAtLevel(0).isEqual(read(fGeom).getFamilyFieldAtLevel(0))
-
-# a cell in two zone groups
-extra = mesh.MakeGroupByIds("MAT_EXTRA", SMESH.VOLUME, mesh.GetElementsByType(SMESH.VOLUME)[:3])
-text = raises(SALOME.SALOME_Exception, algo.ExportCartesianMED, os.path.join(tmp, "y.med"),
-              source="mesh")
-assert "Cell (" in text and "MAT_EXTRA" in text, text
-mesh.RemoveGroup(extra)
-
-# not computed
-mesh4 = smesh.Mesh(world, "NotComputed")
-a4 = mesh4.CartesianGrid()
-a4.Grid(nbCells=5)
-mesh4.CreateEmptyGroup(SMESH.VOLUME, "MAT_E")
-text = raises(SALOME.SALOME_Exception, a4.ExportCartesianMED, os.path.join(tmp, "y.med"), source="mesh")
-assert "not computed" in text, text
-
-# hypothesis changed after compute: SMESH clears the mesh
-assert mesh2.Compute(), mesh2.GetComputeErrors()
-mesh2.GroupOnGeom(geompy.GetExistingSubObjects(world, True)[0], "MAT_G", SMESH.VOLUME)
-algo2.Grid(nbCells=3)
-text = raises(SALOME.SALOME_Exception, algo2.ExportCartesianMED, os.path.join(tmp, "y.med"),
-              source="mesh")
-assert "not computed" in text, text
-assert not os.path.exists(os.path.join(tmp, "y.med"))
-
 # ---- review fixes
 # overlap of geometry zone groups is found before classifying the grid: no slab classified
 worldAlgo = CartesianGridPluginBuilder.CartesianGridAlgorithm(mesh)
@@ -196,7 +165,7 @@ algo5.Grid(nbCells=4, coordinates=[[-100, 0], None, None])
 summary = algo5.ExportCartesianMED(os.path.join(tmp, "half.med"))
 assert "X planes cover" in summary, summary
 
-# mesh source on a study saved and reopened (SMESH loads mesh data lazily)
+# export of a mesh of a study saved and reopened (SMESH loads mesh data lazily)
 fStudy = os.path.join(tmp, "study.hdf")
 assert salome.myStudy.SaveAs(fStudy, False, False)
 salome.myStudy.Clear()
@@ -205,6 +174,6 @@ assert salome.myStudy.Open(fStudy)
 smesh = smeshBuilder.New()
 salome.myStudy.NewBuilder().LoadWith(salome.myStudy.FindComponent("SMESH"), smesh)
 reopened = salome.myStudy.FindObjectByName("World", "SMESH")[0].GetObject()._narrow(SMESH.SMESH_Mesh)
-summary = CartesianGridPluginBuilder.ExportCartesianMED(reopened, os.path.join(tmp, "reopened.med"), source="mesh")
+summary = CartesianGridPluginBuilder.ExportCartesianMED(reopened, os.path.join(tmp, "reopened.med"))
 assert "MAT_IRON: 504 cells" in summary, summary
 print("OK")

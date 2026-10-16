@@ -62,8 +62,6 @@ the geometry groups of the main shape whose name starts with the <i>zone prefix<
 empty: all groups); a cell takes the zone of the solid containing its center. A solid in two zone groups is an
 error; solids in no zone group are listed in the summary. Without any zone group the file holds the grid only
 (every cell in family 0) and the summary starts with a warning.</li>
-<li><b>Zones from the mesh</b> (Python only, <code>source="mesh"</code>): zones are the volume groups of the computed
-mesh whose name starts with the prefix. A cell in two zone groups is an error.</li>
 <li><b>File</b>: one Cartesian mesh named after the mesh, components X, Y, Z, cells numbered i fastest, then j, then k.
 Family 0: no zone; zone groups sorted by name get families -1, -2, ... named <code>FAM_&lt;group&gt;</code>, each holding
 the group. Group names: at most 60 characters.</li>

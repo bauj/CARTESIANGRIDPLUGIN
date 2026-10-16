@@ -46,11 +46,11 @@ public:
   //! Classification of the cells up to 0.2, then creation of nodes and hexahedra
   double GetProgress() const override;
 
-  //! Writes the grid of the hypothesis to a MED Cartesian file with one group per zone;
-  //! fromMesh false: owner solid of each cell (no element created); true: hexahedra of the
-  //! mesh volume groups named as the zones. Returns the summary; throws SALOME_Exception.
+  //! Writes the grid of the hypothesis to a MED Cartesian file with one group per zone, a cell
+  //! taking the zone of its owner solid (no element created). Returns the summary; throws
+  //! SALOME_Exception.
   std::string ExportCartesianMED(SMESH_Mesh& mesh, const std::string& file,
-                                 const std::string& meshName, bool fromMesh,
+                                 const std::string& meshName,
                                  std::vector<CartesianGridPlugin_ExportZone> zones);
   //! Classification progress of the running export, 0..1
   double ExportProgress() const;
@@ -60,10 +60,6 @@ public:
   static std::vector<int> SolidIds(SMESH_Mesh& mesh);
 
 private:
-  //! zone of each cell from the hexahedra of the mesh volume groups named as theZones
-  void zonesFromMesh(SMESH_Mesh& aMesh, const CartesianGridPlugin_Grid& grid,
-                     const std::vector<CartesianGridPlugin_ExportZone>& theZones, std::vector<int>& zoneOfCell);
-
   void removeMeshOnShape(SMESH_Mesh& aMesh, const TopoDS_Shape& aShape);
 
   //! Checks shared by Compute and Evaluate, then cell owners of the grid covering all solids

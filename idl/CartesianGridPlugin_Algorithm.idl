@@ -30,12 +30,10 @@ module CartesianGridPlugin
    */
   interface CartesianGridPlugin_CartesianGrid_3D : SMESH::SMESH_3D_Algo
   {
-    //! Writes the grid of the mesh hypothesis to a MED Cartesian file, one group per zone;
-    //! fromMesh false: zones of the owner solids, no element created; true: zones of the
-    //! hexahedra of the mesh volume groups named as the zones. Returns the report, one message
-    //! per line: KEY<tab>arg<tab>... (text made by CartesianGridPluginBuilder.ExportCartesianMED).
-    string ExportCartesianMED(in SMESH::SMESH_Mesh mesh, in string file, in boolean fromMesh,
-                              in ExportZones zones) raises (SALOME::SALOME_Exception);
+    //! Writes the grid of the mesh hypothesis to a MED Cartesian file, one group per zone, a
+    //! cell taking the zone of its owner solid (no element created). Returns the report, one
+    //! message per line: KEY<tab>arg<tab>... (text made by CartesianGridPluginBuilder.ExportCartesianMED).
+    string ExportCartesianMED(in SMESH::SMESH_Mesh mesh, in string file, in ExportZones zones) raises (SALOME::SALOME_Exception);
     //! progress of the running export, 0..1
     double GetExportProgress();
     //! stops the running export

@@ -264,7 +264,6 @@ REPORT_FORMATS = {
     "NOTE_UNNAMED": ("note", "Note: {0} solid(s) without a name in the study or in SHAPER, named SOLID_<id>: {1}"),
     "NOTE_SHARED": ("note", 'Note: name "{0}" used by {1} solids, zones {2}'),
     "WARN_NO_GEOMETRY_GROUP": ("warning", "Warning: no geometry group named {0}* under {1} (its groups: {2})"),
-    "WARN_NO_MESH_GROUP": ("warning", "Warning: no mesh volume group named {0}*"),
     "GRID": ("info", "Cartesian grid {0} x {1} x {2} = {3} cells written to {4}"),
     "ZONE_CELLS": ("info", "  {0}: {1} cells"),
     "NO_ZONE_CELLS": ("info", "  no zone: {0} cells"),
@@ -285,17 +284,15 @@ def ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     fileName as a Cartesian mesh, one cell group per zone; return the summary text.
     source "geometry": zones are the geometry groups of the main shape whose name starts with
     zonePrefix, each cell takes the zone of the solid containing its center, no mesh element is
-    needed. source "mesh": zones are the volume groups of the computed mesh whose name starts
-    with zonePrefix. A solid (geometry) or a cell (mesh) in two zone groups is an error. Without
-    any zone group the file holds the grid only (every cell in family 0), with a warning.
+    needed. A solid in two zone groups is an error. Without any zone group the file holds the grid only (every cell in family 0), with a warning.
     source "solids": one zone per solid of the main shape, named by SolidNames (zonePrefix is not
     used); no group is needed."""
     return ReportText(ExportCartesianMEDMessages(mesh, fileName, source, zonePrefix))
 
 def ExportCartesianMEDMessages(mesh, fileName, source="geometry", zonePrefix="MAT_"):
     """ExportCartesianMED returning the report as messages [(key, args)] of REPORT_FORMATS"""
-    if source not in ("geometry", "mesh", "solids"):
-        raise ValueError('source: "geometry", "mesh" or "solids", got %r' % (source,))
+    if source not in ("geometry", "solids"):
+        raise ValueError('source: "geometry" or "solids", got %r' % (source,))
     smeshMesh = mesh.GetMesh() if hasattr(mesh, "GetMesh") else mesh
     algo = CartesianGridAlgorithm(smeshMesh)
     zones = []
@@ -303,7 +300,7 @@ def ExportCartesianMEDMessages(mesh, fileName, source="geometry", zonePrefix="MA
     if source == "solids":
         solids, report = _solidZones(smeshMesh)
         zones = [CartesianGridPlugin.ExportZone(name, [i]) for name, i in solids]
-    elif source == "geometry":
+    else:
         shapeName, groups = _geometryGroups(smeshMesh.GetShapeToMesh())
         for name, ids in groups:
             if name.startswith(zonePrefix):
@@ -311,13 +308,7 @@ def ExportCartesianMEDMessages(mesh, fileName, source="geometry", zonePrefix="MA
         if not zones:
             report.append(("WARN_NO_GEOMETRY_GROUP", (zonePrefix, shapeName,
                                                       ", ".join(n for n, _ in groups) or "-")))
-    else:
-        for g in smeshMesh.GetGroups():
-            if g.GetType() == SMESH.VOLUME and g.GetName().startswith(zonePrefix):
-                zones.append(CartesianGridPlugin.ExportZone(g.GetName(), []))
-        if not zones:
-            report.append(("WARN_NO_MESH_GROUP", (zonePrefix,)))
-    text = algo.ExportCartesianMED(smeshMesh, fileName, source == "mesh", zones)
+    text = algo.ExportCartesianMED(smeshMesh, fileName, zones)
     for line in text.splitlines():
         fields = line.split("\t")
         report.append((fields[0], tuple(fields[1:])))

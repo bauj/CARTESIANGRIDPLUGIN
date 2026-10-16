@@ -99,7 +99,6 @@ which stores only the grid coordinates and one family per cell. Not needed for t
     <message><source>CARTESIANGRID_REPORT_NOTE_UNNAMED</source><translation>Note: {0} solid(s) without a name in the study or in SHAPER, named SOLID_&lt;id&gt;: {1}</translation></message>
     <message><source>CARTESIANGRID_REPORT_NOTE_SHARED</source><translation>Note: name &quot;{0}&quot; used by {1} solids, zones {2}</translation></message>
     <message><source>CARTESIANGRID_REPORT_WARN_NO_GEOMETRY_GROUP</source><translation>Warning: no geometry group named {0}* under {1} (its groups: {2})</translation></message>
-    <message><source>CARTESIANGRID_REPORT_WARN_NO_MESH_GROUP</source><translation>Warning: no mesh volume group named {0}*</translation></message>
     <message><source>CARTESIANGRID_REPORT_GRID</source><translation>Cartesian grid {0} x {1} x {2} = {3} cells written to {4}</translation></message>
     <message><source>CARTESIANGRID_REPORT_ZONE_CELLS</source><translation>  {0}: {1} cells</translation></message>
     <message><source>CARTESIANGRID_REPORT_NO_ZONE_CELLS</source><translation>  no zone: {0} cells</translation></message>

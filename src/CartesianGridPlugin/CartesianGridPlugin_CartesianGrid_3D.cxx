@@ -7,11 +7,9 @@
 #include "CartesianGridPlugin_Hypothesis.hxx"
 
 #include <SMDS_MeshNode.hxx>
-#include <SMESHDS_GroupBase.hxx>
 #include <SMESHDS_Mesh.hxx>
 #include <SMESHDS_SubMesh.hxx>
 #include <SMESH_Comment.hxx>
-#include <SMESH_Group.hxx>
 #include <SMESH_ComputeError.hxx>
 #include <SMESH_Mesh.hxx>
 #include <SMESH_MesherHelper.hxx>
@@ -460,7 +458,7 @@ double CartesianGridPlugin_CartesianGrid_3D::ExportProgress() const
 }
 
 std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh& aMesh, const std::string& file,
-                                                     const std::string& meshName, bool fromMesh,
+                                                     const std::string& meshName,
                                                      std::vector<CartesianGridPlugin_ExportZone> zones)
 {
   std::sort(zones.begin(), zones.end(),
@@ -483,7 +481,7 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
   std::vector<int> zoneOfCell(grid.NbCells(), 0);
   std::vector<int> solidsWithoutZone;
   std::size_t nbUnknown = 0;
-  if (!fromMesh && !zones.empty())   // no zone: every cell in family 0, no classification needed
+  if (!zones.empty())   // no zone: every cell in family 0, no classification needed
   {
     // zones of the solids first: an overlap is reported before the long classification
     std::vector<int> zoneOfSolid(classifier.NbSolids(), 0);
@@ -508,8 +506,6 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
     for (std::size_t c = 0; c < owners.size(); ++c)
       zoneOfCell[c] = owners[c] < 0 ? 0 : zoneOfSolid[owners[c]];
   }
-  else if (fromMesh)
-    zonesFromMesh(aMesh, grid, zones, zoneOfCell);   // Task 3
 
   const std::vector<double> coords[3] = { grid.coords[0], grid.coords[1], grid.coords[2] };
   std::vector<std::string> names;
@@ -550,69 +546,4 @@ std::string CartesianGridPlugin_CartesianGrid_3D::ExportCartesianMED(SMESH_Mesh&
   if (nbUnknown > 0)
     summary << "WARN_UNKNOWN_CELLS\t" << nbUnknown << "\n";
   return summary.str();
-}
-
-void CartesianGridPlugin_CartesianGrid_3D::zonesFromMesh(SMESH_Mesh& aMesh, const CartesianGridPlugin_Grid& grid,
-                                         const std::vector<CartesianGridPlugin_ExportZone>& theZones,
-                                         std::vector<int>& zoneOfCell)
-{
-  SMESHDS_Mesh* meshDS = aMesh.GetMeshDS();
-  if (meshDS->NbVolumes() == 0)
-    throw SALOME_Exception("The mesh is not computed");
-
-  // index of the grid plane at x along axis, -1 if x is not a grid plane
-  auto planeOf = [&grid](int axis, double x) -> int
-  {
-    const std::vector<double>& c = grid.coords[axis];
-    const double tol = 1e-9 * (c.back() - c.front());
-    const auto it = std::lower_bound(c.begin(), c.end(), x - tol);
-    if (it == c.end() || std::abs(*it - x) > tol)
-      return -1;
-    return (int)(it - c.begin());
-  };
-
-  for (std::size_t z = 0; z < theZones.size(); ++z)
-  {
-    const SMESHDS_GroupBase* groupDS = nullptr;
-    for (auto git = aMesh.GetGroups(); git->more(); )
-    {
-      SMESH_Group* g = git->next();
-      if (g->GetGroupDS()->GetType() == SMDSAbs_Volume && theZones[z].name == g->GetName())
-        groupDS = g->GetGroupDS();
-    }
-    if (!groupDS)
-      throw SALOME_Exception(("No volume group " + theZones[z].name + " in the mesh").c_str());
-    for (SMDS_ElemIteratorPtr eit = groupDS->GetElements(); eit->more(); )
-    {
-      const SMDS_MeshElement* e = eit->next();
-      double lo[3] = { HUGE_VAL, HUGE_VAL, HUGE_VAL }, hi[3] = { -HUGE_VAL, -HUGE_VAL, -HUGE_VAL };
-      for (SMDS_NodeIteratorPtr nit = e->nodeIterator(); nit->more(); )
-      {
-        const SMDS_MeshNode* n = nit->next();
-        const double p[3] = { n->X(), n->Y(), n->Z() };
-        for (int a = 0; a < 3; ++a)
-        {
-          lo[a] = std::min(lo[a], p[a]);
-          hi[a] = std::max(hi[a], p[a]);
-        }
-      }
-      int ijk[3];
-      bool ok = e->GetEntityType() == SMDSEntity_Hexa;
-      for (int a = 0; a < 3 && ok; ++a)
-      {
-        ijk[a] = planeOf(a, lo[a]);
-        ok = ijk[a] >= 0 && planeOf(a, hi[a]) == ijk[a] + 1;
-      }
-      if (!ok)
-        throw SALOME_Exception((SMESH_Comment("Element ") << e->GetID() << " of group " << theZones[z].name
-                                << " is not a cell of the grid: the mesh does not match its hypothesis,"
-                                   " compute it again").c_str());
-      int& zc = zoneOfCell[grid.CellIndex(ijk[0], ijk[1], ijk[2])];
-      if (zc && zc != (int)z + 1)
-        throw SALOME_Exception((SMESH_Comment("Cell (") << ijk[0] << ", " << ijk[1] << ", " << ijk[2]
-                                << ") is in zone groups " << theZones[zc - 1].name << " and "
-                                << theZones[z].name).c_str());
-      zc = (int)z + 1;
-    }
-  }
 }

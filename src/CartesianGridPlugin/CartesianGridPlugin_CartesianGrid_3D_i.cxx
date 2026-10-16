@@ -33,7 +33,6 @@ CartesianGridPlugin_CartesianGrid_3D_i::~CartesianGridPlugin_CartesianGrid_3D_i(
 
 char* CartesianGridPlugin_CartesianGrid_3D_i::ExportCartesianMED(SMESH::SMESH_Mesh_ptr     mesh,
                                                  const char*               file,
-                                                 CORBA::Boolean            fromMesh,
                                                  const CartesianGridPlugin::ExportZones& zones)
 {
   SMESH_Mesh_i* meshI = SMESH::DownCast<SMESH_Mesh_i*>(mesh);
@@ -55,8 +54,7 @@ char* CartesianGridPlugin_CartesianGrid_3D_i::ExportCartesianMED(SMESH::SMESH_Me
   }
   try
   {
-    return CORBA::string_dup(GetImpl()->ExportCartesianMED(meshI->GetImpl(), file, meshName,
-                                                           fromMesh, z).c_str());
+    return CORBA::string_dup(GetImpl()->ExportCartesianMED(meshI->GetImpl(), file, meshName, z).c_str());
   }
   catch (const SALOME_Exception& ex)
   {

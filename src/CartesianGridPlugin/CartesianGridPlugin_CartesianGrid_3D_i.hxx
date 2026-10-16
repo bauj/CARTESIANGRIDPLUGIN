@@ -21,7 +21,7 @@ public:
 
   ::CartesianGridPlugin_CartesianGrid_3D* GetImpl();
 
-  char* ExportCartesianMED(SMESH::SMESH_Mesh_ptr mesh, const char* file, CORBA::Boolean fromMesh,
+  char* ExportCartesianMED(SMESH::SMESH_Mesh_ptr mesh, const char* file,
                            const CartesianGridPlugin::ExportZones& zones);
   CORBA::Double GetExportProgress();
   void CancelExport();
