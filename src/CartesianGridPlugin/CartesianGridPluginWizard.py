@@ -142,12 +142,27 @@ def _translatedReport(key):
     text = tr("CARTESIANGRID_REPORT_" + key)
     return None if text == "CARTESIANGRID_REPORT_" + key else text
 
+_guiSwig = None
+
+def _gui():
+    """SALOMEGUI_Swig of the GUI. Not salome.sg: it is a SalomeOutsideGUI without selection when
+    salome_init() first ran non-embedded in the GUI process (e.g. a script importing geomBuilder)"""
+    global _guiSwig
+    if _guiSwig is None:
+        import libSALOME_Swig
+        _guiSwig = libSALOME_Swig.SALOMEGUI_Swig()
+    return _guiSwig
+
+def _updateObjBrowser():
+    import SalomePyQt   # GUI only
+    SalomePyQt.SalomePyQt.updateObjBrowser()
+
 def _selectedGeometry():
     """(entry, GEOM_Object, name) of the single selected geometry (GEOM or SHAPER), or
     (None, None, reason)"""
-    if salome.sg.SelectedCount() != 1:
+    if _gui().SelectedCount() != 1:
         return None, None, tr("CARTESIANGRID_WIZ_SELECT_ONE")
-    entry = salome.sg.getSelected(0)
+    entry = _gui().getSelected(0)
     obj = salome.IDToObject(entry)
     geom = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
     if geom is None:
@@ -307,7 +322,7 @@ class WizardDialog(QDialog):
         if geom is None:
             # another kind of object selected: the geometry is kept; a hint while there is none
             if self.geom is None:
-                self.setGeomMessage("" if salome.sg.SelectedCount() == 0 else text)
+                self.setGeomMessage("" if _gui().SelectedCount() == 0 else text)
             self.updateRunButton()
             return
         if entry == self.geomEntry:
@@ -440,7 +455,7 @@ class WizardDialog(QDialog):
             return
         if corba is None:   # the new mesh becomes the current one
             self.fillMeshes(mesh.GetMesh())
-        salome.sg.updateObjBrowser()
+        _updateObjBrowser()
 
         def work():
             try:
@@ -473,7 +488,7 @@ class WizardDialog(QDialog):
         self.progress.setVisible(False)
         self.closeBtn.setText(tr("CARTESIANGRID_WIZ_CLOSE"))
         self.updateRunButton()
-        salome.sg.updateObjBrowser()
+        _updateObjBrowser()
         kind, text = self.result
         if kind == "ok":
             text = reportText(self.run.parts, _translatedReport)
