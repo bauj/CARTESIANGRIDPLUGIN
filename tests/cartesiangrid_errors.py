@@ -46,6 +46,6 @@ assert not ok and "main shape" in msg, msg
 m = smesh.Mesh(two, "TooManyCells")
 m.CartesianGrid().Grid(step=1e-9)
 ok, msg = compute_error(m)
-assert not ok and "exceeds the limit" in msg, msg
+assert not ok and "cells along" in msg, msg
 assert m.NbElements() == 0
 print("OK")

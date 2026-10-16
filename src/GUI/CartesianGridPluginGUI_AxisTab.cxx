@@ -79,7 +79,7 @@ CartesianGridPluginGUI_AxisTab::CartesianGridPluginGUI_AxisTab(QWidget* theParen
   nbTop->addStretch();
   nbLay->addWidget(new QLabel(tr("CARTESIANGRID_NB_CELLS"), nbPage));
   myNbCells = new SalomeApp_IntSpinBox(nbPage);
-  myNbCells->setRange(1, 100000);
+  myNbCells->setRange(1, (int)CartesianGridPlugin_Grid::MaxNbCellsPerAxis);
   myNbCells->setValue(10);   // default of the hypothesis, shown before any Load (wizard, new mesh)
   nbLay->addWidget(myNbCells, 1);
   myStack->addWidget(nbPage);

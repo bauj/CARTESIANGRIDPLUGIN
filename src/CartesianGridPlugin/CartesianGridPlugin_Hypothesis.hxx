@@ -68,7 +68,7 @@ public:
   void NbCellsOfGrid(const double theMin[3], const double theMax[3], long long theNb[3]) const;
 
   //! Grid covering [theMin, theMax] exactly; check NbCellsOfGrid() against
-  //! CartesianGridPlugin_Grid::MaxNbCells first
+  //! CartesianGridPlugin_Grid::MaxNbCellsPerAxis first
   CartesianGridPlugin_Grid MakeGrid(const double theMin[3], const double theMax[3]) const;
 
   std::ostream& SaveTo(std::ostream& save) override;

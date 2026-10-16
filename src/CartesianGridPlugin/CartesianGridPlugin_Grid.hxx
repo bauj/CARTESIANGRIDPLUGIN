@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -46,18 +47,19 @@ struct CartesianGridPlugin_Grid
     return c;
   }
 
-  //! upper limit on the total number of cells of a grid (~76 GB of SMDS hexahedra)
-  static constexpr long long MaxNbCells = 100000000LL;
+  //! upper limit on the number of cells along one axis (counts and indices per axis are int);
+  //! the total number of cells is not limited
+  static constexpr long long MaxNbCellsPerAxis = std::numeric_limits<int>::max() - 1LL;
 
   //! number of cells giving a spacing closest to the wished step: max(1, round(extent/step)),
-  //! saturated to MaxNbCells + 1 so that a tiny step cannot overflow
+  //! saturated to MaxNbCellsPerAxis + 1 so that a tiny step cannot overflow
   static long long NbCellsForStep(double extent, double step)
   {
     if (!(step > 0.))
       return 1;
     const double n = std::round(extent / step);
-    if (!(n <= (double)MaxNbCells)) // also catches inf and nan
-      return MaxNbCells + 1;
+    if (!(n <= (double)MaxNbCellsPerAxis)) // also catches inf and nan
+      return MaxNbCellsPerAxis + 1;
     return std::max(1LL, (long long)n);
   }
 

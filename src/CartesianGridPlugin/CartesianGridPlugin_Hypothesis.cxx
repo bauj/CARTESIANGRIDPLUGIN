@@ -305,7 +305,7 @@ std::istream& CartesianGridPlugin_Hypothesis::LoadFrom(std::istream& load)
       return load;
     if (version < 2)
       continue;
-    if (!readValues(load, coords[a], (std::size_t)CartesianGridPlugin_Grid::MaxNbCells + 1))
+    if (!readValues(load, coords[a], (std::size_t)CartesianGridPlugin_Grid::MaxNbCellsPerAxis + 1))
       return load;
     std::size_t n = 0;
     if (!readSize(load, n, 10000))

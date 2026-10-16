@@ -51,7 +51,7 @@ int main()
     CartesianGridPlugin_Hypothesis tiny(2, nullptr);
     tiny.SetStep(0, 1e-12);
     tiny.NbCellsOfGrid(mn, mx, nb);
-    CHECK(nb[0] == CartesianGridPlugin_Grid::MaxNbCells + 1);
+    CHECK(nb[0] == CartesianGridPlugin_Grid::MaxNbCellsPerAxis + 1);
   }
 
   // validation

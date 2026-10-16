@@ -96,7 +96,7 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
 - Cells are classified in parallel on all cores (one line intersection per row of cells and per
   solid, exact point classification near the boundary only), then nodes and hexahedra are created on one
   thread. The compute reports its progress and can be canceled (no partial mesh left).
-- A grid of more than 10^8 cells is refused with a compute error.
+- The plugin does not limit the number of cells, the memory does: about 16 bytes per cell for the Cartesian MED export alone, about 760 bytes per hexahedron for an SMESH mesh. A step giving more than 2^31 cells along an axis is refused.
 - A cell center the geometry kernel cannot locate in a solid is taken as outside it (warning).
 
 ## Layout

@@ -204,10 +204,16 @@ bool CartesianGridPlugin_CartesianGrid_3D::prepare(SMESH_Mesh& aMesh, CartesianG
     return error(COMPERR_BAD_SHAPE, "Empty bounding box");
   long long nb[3];
   _hyp->NbCellsOfGrid(minC, maxC, nb);
-  if ((double)nb[0] * nb[1] * nb[2] > (double)CartesianGridPlugin_Grid::MaxNbCells)
+  for (int a = 0; a < 3; ++a)
+    if (nb[a] > CartesianGridPlugin_Grid::MaxNbCellsPerAxis)
+      return error(COMPERR_BAD_PARMETERS,
+                   SMESH_Comment("More than ") << CartesianGridPlugin_Grid::MaxNbCellsPerAxis
+                   << " cells along " << "XYZ"[a] << ": the step is too small");
+  // no limit on the total but the per-cell arrays must be addressable
+  if ((double)nb[0] * nb[1] * nb[2] >= (double)owners.max_size())
     return error(COMPERR_BAD_PARMETERS,
                  SMESH_Comment("Grid of ") << nb[0] << " x " << nb[1] << " x " << nb[2]
-                 << " cells exceeds the limit of " << CartesianGridPlugin_Grid::MaxNbCells << " cells");
+                 << " cells is too large to be stored");
   grid = _hyp->MakeGrid(minC, maxC);
   _coverageWarning = _hyp->CoverageWarning(grid, minC, maxC);
   _coverageGaps = _hyp->CoverageGaps(grid, minC, maxC);
