@@ -75,6 +75,20 @@ int main()
   CHECK(refused(std::vector<int>(12, -1), { "A" }));             // negative zone
   CHECK(refused(std::vector<int>(12, 1), { std::string(61, 'x') })); // FAM_ + 61 > 64 chars
   CHECK(refused(std::vector<int>(12, 0), { "A", "A" }));         // duplicate names
+  // an axis with fewer than 2 coordinates has no cell
+  auto refusedAxis = [&](int axis, const std::vector<double>& axisCoords)
+  {
+    std::vector<double> bad[3] = { c[0], c[1], c[2] };
+    bad[axis] = axisCoords;
+    try { CartesianGridPlugin_CartesianMED::Write("never.med", "g", bad, std::vector<int>(12, 0), {}); }
+    catch (const std::invalid_argument& ex)
+    {
+      return std::string(ex.what()).find("at least 2 coordinates") != std::string::npos;
+    }
+    return false;
+  };
+  CHECK(refusedAxis(0, { 1. }));
+  CHECK(refusedAxis(2, {}));
   CHECK(std::fopen("never.med", "r") == nullptr);
 
   std::remove(file.c_str());
