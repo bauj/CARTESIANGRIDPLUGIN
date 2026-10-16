@@ -82,7 +82,8 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
   `MEDmeshEntityFamilyNumberRd` on `MED_CELL` / `MED_HEXA8`, then `MEDnFamily` and
   `MEDfamilyInfo` for the group names of each family. Read zones by group name, not by family
   number, and accept families holding several groups (planned for mixed cells).
-- SMESH (*File > Import > MED*) and ParaVis open the file; SMESH shows the group names padded
+- SMESH (*File > Import > MED*), ParaVis and ParaView (MEDReader plugin, shipped with the
+  Kitware binaries: *Tools > Manage Plugins*) open the file; SMESH shows the group names padded
   with spaces.
 
 ## Limits
@@ -94,10 +95,10 @@ summary = CartesianGridPluginBuilder.ExportCartesianMED(mesh, "grid.med", source
 - Cells are classified in parallel on all cores (one line intersection per row of cells and per
   solid, exact point classification near the boundary only), then nodes and hexahedra are created on one
   thread. The compute reports its progress and can be canceled (no partial mesh left).
-- The plugin does not limit the number of cells, the memory does: about 16 bytes per cell for the Cartesian MED export alone, about 760 bytes per hexahedron for an SMESH mesh. A step giving more than 2^31 cells along an axis is refused.
+- The plugin does not limit the number of cells, the memory does: about 16 bytes per cell for
+  the Cartesian MED export alone, about 760 bytes per hexahedron for an SMESH mesh. A step
+  giving more than 2^31 cells along an axis is refused.
 - A cell center the geometry kernel cannot locate in a solid is taken as outside it (warning).
-
-## Layout
 
 ## Cartesian Grid Wizard
 
@@ -117,10 +118,17 @@ the Create Mesh steps.
 - **Also compute the SMESH mesh** (optional): computes the hexahedra and creates one mesh group per
   geometry group of solids (names already used are skipped). A SMESH mesh is unstructured (every node
   and hexahedron stored), much bigger than the Cartesian MED file; it is only for viewing.
-- Run shows a progress bar (export, then compute) and Cancel, then a summary; the dialog stays open. The MED file is written first: a failed or canceled compute leaves it, with a warning in the summary.
+- Run shows a progress bar (export, then compute) and Cancel, then a summary; the dialog stays open.
+  The MED file is written first: a failed or canceled compute leaves it, with a warning in the
+  summary.
 
 The grid panel is the C++ `CartesianGridPluginGUI_GridPanel`, created through C entry points of
 `libCartesianGridPluginGUI` (ctypes) and wrapped as a PyQt widget with `sip.wrapinstance`.
+
+The dialogs, the wizard and its summary are in English and French (SALOME language preference); errors
+coming from the mesher engine stay in English, as in the other SMESH plugins.
+
+## Layout
 
 | Path | Content |
 |---|---|
@@ -133,7 +141,6 @@ The grid panel is the C++ `CartesianGridPluginGUI_GridPanel`, created through C 
 | `idl/CartesianGridPlugin_Algorithm.idl` | CORBA interfaces |
 | `resources/CartesianGridPlugin.xml` | meshers declaration for SMESH |
 | `tests` | C++ core tests and Python smesh tests, `data/four_materials.gdml` |
-| `misc` | GUI check list, memory measure, GDML test file generator |
 | `doc/index.html` | user page |
 
 ## Build
