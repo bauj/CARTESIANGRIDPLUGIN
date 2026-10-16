@@ -1,3 +1,4 @@
+<!-- Copyright (C) 2026  CARTESIANGRIDPLUGIN authors, LGPL 2.1 or later (see COPYING) -->
 <document>
   <section name="resources">
     <parameter name="CartesianGridPlugin" value="${CARTESIANGRIDPLUGIN_ROOT_DIR}/share/salome/resources/cartesiangridplugin"/>

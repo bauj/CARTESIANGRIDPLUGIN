@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Four overlapping boxes (GDML-like nesting): owner = smallest containing solid,
 # groups on geometry become mesh groups, recompute leaves no stale element
 import salome

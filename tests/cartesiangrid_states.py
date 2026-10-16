@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Sub-mesh states across hypothesis and algorithm changes
 import salome
 salome.salome_init()

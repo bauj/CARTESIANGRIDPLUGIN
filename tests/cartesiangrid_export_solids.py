@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Cartesian MED export with one zone per solid (source "solids"): names from GEOM solids
 # published under the main shape, from SHAPER sub-results (SHAPERSTUDY does not publish them),
 # SOLID_<id> for unnamed solids, _<id> on duplicated names; no group and no mesh element needed

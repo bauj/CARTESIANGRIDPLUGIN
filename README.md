@@ -169,4 +169,4 @@ The SHAPER tests (`cartesiangrid_shaper_gdml`, `cartesiangrid_gdml_file`) need a
 
 ## License
 
-LGPL 2.1 or later.
+GNU Lesser General Public License, version 2.1 or later: see `COPYING`.

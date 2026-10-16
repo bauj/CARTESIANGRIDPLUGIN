@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Invalid inputs give compute errors, never crashes
 import salome
 salome.salome_init()

@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # GDML file -> SHAPER ImportCSG -> MAT_* groups -> SHAPERSTUDY -> CartesianGrid_3D -> mesh groups
 # data/four_materials.gdml is written by misc/make_four_materials_gdml.py (same world as
 # cartesiangrid_shaper_gdml.py: wood LV placed twice, faces on multiples of 10)

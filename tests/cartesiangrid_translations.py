@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Translations of the wizard, its errors and the export report: every key used by the wizard, the SMESH
 # plugins menu and the report is in CartesianGridPlugin_msg_en.qm and _fr.qm, the English text of
 # the report keys is the one of REPORT_FORMATS, and both languages use the same placeholders

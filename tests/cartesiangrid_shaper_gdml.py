@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # SHAPER GDML World -> MAT_* groups -> SHAPERSTUDY -> CartesianGrid_3D -> mesh groups
 import salome
 salome.standalone()

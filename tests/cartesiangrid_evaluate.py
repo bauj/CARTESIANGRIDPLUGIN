@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Evaluate predicts the node and hexahedron counts of Compute
 import salome
 salome.salome_init()

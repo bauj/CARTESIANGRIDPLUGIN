@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # cartesiangrid_four_materials with SHAPER: four overlapping boxes in a compound, MAT_* groups,
 # published to SHAPERSTUDY; owner = smallest containing solid, groups on geometry become
 # mesh groups, recompute leaves no stale element

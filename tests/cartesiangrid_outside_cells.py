@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Remove vs Keep outside cells, solid owning no cell, recompute after Keep
 import math
 import salome

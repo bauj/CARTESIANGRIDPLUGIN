@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Cartesian Grid Wizard run logic (no GUI): meshes found on a geometry, export without and with
 # the SMESH mesh, groups on geometry (solid groups only, no duplicates), compute failure; GEOM and
 # SHAPER geometries

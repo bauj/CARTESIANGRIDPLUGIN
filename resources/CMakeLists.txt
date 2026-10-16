@@ -1,3 +1,6 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
+
 SET(CARTESIANGRIDPLUGIN_RESOURCES_FILES
   CartesianGridPlugin.xml
   SalomeApp.xml

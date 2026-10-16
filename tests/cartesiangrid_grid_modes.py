@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Grid modes Coordinates and Spacing: counts, node positions, coverage warning, Evaluate, dump
 import os
 import tempfile

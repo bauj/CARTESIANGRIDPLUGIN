@@ -1,3 +1,5 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
 # Cartesian MED export: zone groups from geometry groups, read back with MEDLoader,
 # re-import in SMESH, errors, progress and cancel
 import os
