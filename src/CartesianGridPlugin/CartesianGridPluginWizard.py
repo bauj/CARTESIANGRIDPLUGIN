@@ -23,9 +23,13 @@ def newMesh(geom, name):
 
 # report messages of a run (Builder.REPORT_FORMATS + the compute ones), translated by the dialog
 # report of a run: a paragraph for the SMESH mesh (its groups always come from the geometry groups,
-# whatever the zones of the file), a paragraph for the MED file
+# whatever the zones of the file), a paragraph for the MED file. The MED file is written first: it
+# does not need the SMESH mesh, so a failed or canceled compute still leaves it (warning in the report)
 REPORT_FORMATS = dict(Builder.REPORT_FORMATS, **{
     "COMPUTED": ("info", "SMESH mesh: {0} hexahedra"),
+    "COMPUTE_CANCELED": ("warning", "SMESH mesh: computation canceled"),
+    "NOT_COMPUTED": ("warning", "SMESH mesh: not computed"),
+    "NOT_COMPUTED_DETAILS": ("warning", "SMESH mesh: not computed:\n{0}"),
     "COMPUTE_WARNINGS": ("warning", "  warnings:\n{0}"),
     "GROUPS_CREATED": ("info", "  mesh groups from the geometry groups: {0}"),
     "GROUP_EXISTS": ("info", "  group {0} skipped: " + Builder.SKIP_EXISTS),
@@ -35,22 +39,11 @@ REPORT_FORMATS = dict(Builder.REPORT_FORMATS, **{
     "MED_ZONES_GROUPS": ("info", "  zones: geometry groups named {0}*"),
     "MED_ZONES_ALL": ("info", "  zones: all geometry groups"),
     "MED_GRID": ("info", "  Cartesian grid {0} x {1} x {2} = {3} cells"),
-    # errors of WizardRun (RunError); the details are the English SMESH compute errors
-    "ERR_COMPUTE_CANCELED": ("error", "Computation canceled"),
-    "ERR_NOT_COMPUTED": ("error", "The mesh is not computed"),
-    "ERR_NOT_COMPUTED_DETAILS": ("error", "The mesh is not computed:\n{0}"),
-    "ERR_CANCELED": ("error", "Canceled"),
 })
 
-class RunError(RuntimeError):
-    """error of WizardRun: str() is the English text, key and args the message of REPORT_FORMATS"""
-    def __init__(self, key, *args):
-        RuntimeError.__init__(self, REPORT_FORMATS[key][1].format(*args))
-        self.key, self.args_ = key, args
-
 class WizardRun:
-    """Compute (optional) and export of one mesh; GUI-free. run() returns the summary text or
-    raises RuntimeError; then parts holds the report as lists of messages (key, args) or
+    """Export and compute (optional) of one mesh; GUI-free. run() returns the summary text or
+    raises RuntimeError when the export fails (then no compute); parts holds the report as lists of messages (key, args) or
     (key, args, indent) of REPORT_FORMATS, one list per paragraph. progress() and cancel() may be called from another thread"""
     def __init__(self, mesh, fileName, compute, zonePrefix, zoneSource="geometry"):
         self.mesh = mesh                 # smeshBuilder.Mesh
@@ -85,37 +78,46 @@ class WizardRun:
         return "\n".join(lines)
 
     def run(self):
-        parts = self.parts = []
-        if self.compute:
-            self.phase = "compute"
-            ok = self.mesh.Compute()
-            if self.canceled:
-                raise RunError("ERR_COMPUTE_CANCELED")
-            errors = self._computeErrors()
-            if not ok or self.mesh.NbVolumes() == 0:
-                raise RunError("ERR_NOT_COMPUTED_DETAILS", errors) if errors else RunError("ERR_NOT_COMPUTED")
-            part = [("COMPUTED", (self.mesh.NbVolumes(),))]
-            if errors:
-                part.append(("COMPUTE_WARNINGS", (errors,)))
-            created, skipped = Builder.CreateGroupsOnGeometry(self.mesh)
-            if created:
-                part.append(("GROUPS_CREATED", (", ".join(created),)))
-            for name, reason in skipped:
-                part.append(("GROUP_EXISTS" if reason == Builder.SKIP_EXISTS else "GROUP_EMPTY", (name,)))
-            parts.append(part)
-        if self.canceled:
-            raise RunError("ERR_CANCELED")
+        self.parts = []
         self.phase = "export"
         try:
-            parts.append(self._medPart(Builder.ExportCartesianMEDMessages(self.mesh, self.fileName,
-                                                                          self.zoneSource, self.zonePrefix)))
+            medPart = self._medPart(Builder.ExportCartesianMEDMessages(self.mesh, self.fileName,
+                                                                       self.zoneSource, self.zonePrefix))
         except SALOME.SALOME_Exception as e:
             raise RuntimeError(e.details.text)
         except ValueError as e:
             raise RuntimeError(str(e))
         finally:
             self.phase = None
-        return reportText(parts)
+        if self.compute:
+            self.parts.append(self._meshPart())
+        self.parts.append(medPart)
+        return reportText(self.parts)
+
+    def _meshPart(self):
+        """compute the SMESH mesh and create its groups; the report paragraph, a warning when the
+        compute is canceled or fails"""
+        if self.canceled:   # canceled at the end of the export
+            return [("COMPUTE_CANCELED", ())]
+        self.phase = "compute"
+        try:
+            ok = self.mesh.Compute()
+        finally:
+            self.phase = None
+        if self.canceled:
+            return [("COMPUTE_CANCELED", ())]
+        errors = self._computeErrors()
+        if not ok or self.mesh.NbVolumes() == 0:
+            return [("NOT_COMPUTED_DETAILS", (errors,))] if errors else [("NOT_COMPUTED", ())]
+        part = [("COMPUTED", (self.mesh.NbVolumes(),))]
+        if errors:
+            part.append(("COMPUTE_WARNINGS", (errors,)))
+        created, skipped = Builder.CreateGroupsOnGeometry(self.mesh)
+        if created:
+            part.append(("GROUPS_CREATED", (", ".join(created),)))
+        for name, reason in skipped:
+            part.append(("GROUP_EXISTS" if reason == Builder.SKIP_EXISTS else "GROUP_EMPTY", (name,)))
+        return part
 
     def _medPart(self, messages):
         """export messages as a paragraph: file, zone choice, grid, cell counts, then the notes and
@@ -420,10 +422,6 @@ class WizardDialog(QDialog):
                          % (self.meshName.text().strip() or "CartesianGrid", self.geomName))
         else:
             steps.append(tr("CARTESIANGRID_WIZ_STEP_MESH") % self.meshCombo.currentText())
-        if self.computeBox.isChecked():
-            steps.append(tr("CARTESIANGRID_WIZ_STEP_COMPUTE"))
-        else:
-            steps.append(tr("CARTESIANGRID_WIZ_STEP_NO_COMPUTE"))
         prefix = self.prefix.text()
         if self.zoneSource() == "solids":
             zones = tr("CARTESIANGRID_WIZ_ZONES_SOLIDS")
@@ -431,6 +429,10 @@ class WizardDialog(QDialog):
             zones = (tr("CARTESIANGRID_WIZ_ZONES_PREFIX") % prefix if prefix else tr("CARTESIANGRID_WIZ_ZONES_ALL"))
         steps.append(tr("CARTESIANGRID_WIZ_STEP_EXPORT")
                      % (self.file.text().strip() or tr("CARTESIANGRID_WIZ_NO_FILE_NAME"), zones))
+        if self.computeBox.isChecked():
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_COMPUTE"))
+        else:
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_NO_COMPUTE"))
         # rich text: Qt wraps it
         self.runBtn.setToolTip("<b>%s</b><ol>%s</ol>" % (html.escape(tr("CARTESIANGRID_WIZ_RUN").replace("&", "")),
                                                          "".join("<li>%s</li>" % html.escape(t) for t in steps)))
@@ -490,8 +492,6 @@ class WizardDialog(QDialog):
         def work():
             try:
                 self.result = ("ok", self.run.run())
-            except RunError as e:
-                self.result = ("error", reportText([[(e.key, e.args_)]], _translatedReport))
             except RuntimeError as e:
                 self.result = ("error", str(e))
             except SALOME.SALOME_Exception as e:

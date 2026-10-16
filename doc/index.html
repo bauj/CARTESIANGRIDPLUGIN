@@ -46,7 +46,8 @@ group of solids (names already used are skipped, groups of faces or edges are sk
 unstructured: every node and hexahedron is stored, so it is much bigger and slower than the Cartesian MED file.
 It is only needed to view the cells.</li>
 </ul>
-<p><i>Run</i> shows a progress bar (compute, then export) and a Cancel button, then a summary. The dialog stays open
+<p><i>Run</i> shows a progress bar (export, then compute) and a Cancel button, then a summary. The MED file is written
+first: a failed or canceled compute leaves it, with a warning in the summary. The dialog stays open
 for another run. Changing the grid of a computed mesh clears its cells until it is computed again.</p>
 <p>The dialogs, the wizard, its summary and its own errors follow the SALOME language (English or French); as in the
 other SMESH plugins, errors coming from the mesher engine (compute errors, grid validation, export errors) are in

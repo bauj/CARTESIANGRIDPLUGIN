@@ -119,7 +119,7 @@ the Create Mesh steps.
 - **Also compute the SMESH mesh** (optional): computes the hexahedra and creates one mesh group per
   geometry group of solids (names already used are skipped). A SMESH mesh is unstructured (every node
   and hexahedron stored), much bigger than the Cartesian MED file; it is only for viewing.
-- Run shows a progress bar (compute, then export) and Cancel, then a summary; the dialog stays open.
+- Run shows a progress bar (export, then compute) and Cancel, then a summary; the dialog stays open. The MED file is written first: a failed or canceled compute leaves it, with a warning in the summary.
 
 The grid panel is the C++ `CartesianGridPluginGUI_GridPanel`, created through C entry points of
 `libCartesianGridPluginGUI` (ctypes) and wrapped as a PyQt widget with `sip.wrapinstance`.

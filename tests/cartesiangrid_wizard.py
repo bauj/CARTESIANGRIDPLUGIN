@@ -97,7 +97,7 @@ assert "  group MAT_AIR skipped: a mesh group of that name exists" in summary, s
 mesh2 = newMesh(world, "W2")
 assert [n for n, _ in Builder.CartesianGridMeshesOn(world)] == ["W1", "W2"]
 
-# ---- compute failure: Keep outside cells on a non-compound shape, no export
+# ---- invalid hypothesis (Keep outside cells on a non-compound shape): export error, no compute
 single = box(0, 0, 0, 10, 10, 10)
 geompy.addToStudy(single, "Single")
 g = geompy.CreateGroup(single, geompy.ShapeType["SOLID"])
@@ -107,14 +107,19 @@ bad = newMesh(single, "Bad")
 Builder.CartesianGridParametersOf(bad).SetKeepOutsideCells(True)
 f3 = os.path.join(tmp, "bad.med")
 msg = raises(WizardRun(bad, f3, True, "MAT_").run)
-assert msg.startswith("The mesh is not computed"), msg
-from salome.CartesianGridPlugin.CartesianGridPluginWizard import RunError
-try:
-    WizardRun(bad, f3, True, "MAT_").run()
-    assert False, "no error"
-except RunError as e:
-    assert e.key in ("ERR_NOT_COMPUTED", "ERR_NOT_COMPUTED_DETAILS"), e.key
+assert "Keep outside cells requires a compound" in msg, msg
 assert not os.path.exists(f3)
+assert bad.NbVolumes() == 0
+
+# ---- compute failure after the export: the MED file stays, the report warns
+Builder.CartesianGridParametersOf(bad).SetKeepOutsideCells(False)
+bad.Compute = lambda: False   # stands for a compute error (e.g. memory)
+badRun = WizardRun(bad, f3, True, "MAT_")
+summary = badRun.run()
+assert summary.startswith("SMESH mesh: not computed"), summary
+assert badRun.parts[0][0][0] in ("NOT_COMPUTED", "NOT_COMPUTED_DETAILS"), badRun.parts
+assert "\n\nMED file: " + f3 in summary, summary
+assert medGroups(f3) == {"MAT_X": 1000}, medGroups(f3)
 
 # ---- no zone group with the prefix: grid only, with a warning
 f5 = os.path.join(tmp, "none.med")
@@ -137,6 +142,7 @@ from salome.CartesianGridPlugin.CartesianGridPluginWizard import reportLevel, re
 from qtsalome import QCoreApplication, QTranslator
 assert reportLevel(again.parts) == "info", again.parts           # groups created / skipped
 assert reportLevel(gridOnly.parts) == "warning", gridOnly.parts
+assert reportLevel(badRun.parts) == "warning", badRun.parts           # compute failed, file written
 app = QCoreApplication.instance() or QCoreApplication([])
 fr = QTranslator()
 assert fr.load(os.path.join(os.environ["CARTESIANGRIDPLUGIN_ROOT_DIR"], "share", "salome", "resources",

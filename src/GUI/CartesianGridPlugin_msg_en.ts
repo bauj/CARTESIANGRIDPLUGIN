@@ -108,16 +108,15 @@ which stores only the grid coordinates and one family per cell. Not needed for t
     <message><source>CARTESIANGRID_REPORT_WARN_COVERAGE</source><translation>  warning: {0} planes cover [{1}, {2}], solids span [{3}, {4}]: cells outside are not meshed</translation></message>
     <message><source>CARTESIANGRID_REPORT_WARN_UNKNOWN_CELLS</source><translation>  warning: {0} cell center(s) could not be located in a solid and were taken as outside it, check the geometry</translation></message>
     <message><source>CARTESIANGRID_REPORT_COMPUTED</source><translation>SMESH mesh: {0} hexahedra</translation></message>
+    <message><source>CARTESIANGRID_REPORT_COMPUTE_CANCELED</source><translation>SMESH mesh: computation canceled</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOT_COMPUTED</source><translation>SMESH mesh: not computed</translation></message>
+    <message><source>CARTESIANGRID_REPORT_NOT_COMPUTED_DETAILS</source><translation>SMESH mesh: not computed:
+{0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_COMPUTE_WARNINGS</source><translation>  warnings:
 {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUPS_CREATED</source><translation>  mesh groups from the geometry groups: {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EXISTS</source><translation>  group {0} skipped: a mesh group of that name exists</translation></message>
     <message><source>CARTESIANGRID_REPORT_GROUP_EMPTY</source><translation>  group {0} skipped: no cell: not a group of solids, or no cell center in its solids</translation></message>
-    <message><source>CARTESIANGRID_REPORT_ERR_COMPUTE_CANCELED</source><translation>Computation canceled</translation></message>
-    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED</source><translation>The mesh is not computed</translation></message>
-    <message><source>CARTESIANGRID_REPORT_ERR_NOT_COMPUTED_DETAILS</source><translation>The mesh is not computed:
-{0}</translation></message>
-    <message><source>CARTESIANGRID_REPORT_ERR_CANCELED</source><translation>Canceled</translation></message>
     <message><source>CARTESIANGRID_REPORT_MED_FILE</source><translation>MED file: {0}</translation></message>
     <message><source>CARTESIANGRID_REPORT_MED_ZONES_SOLIDS</source><translation>  zones: one per solid, named as in the study or SHAPER</translation></message>
     <message><source>CARTESIANGRID_REPORT_MED_ZONES_GROUPS</source><translation>  zones: geometry groups named {0}*</translation></message>
