@@ -13,8 +13,6 @@ import GEOM
 from salome.smesh import smeshBuilder
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder as Builder
 
-TITLE = "Cartesian Grid Wizard"
-NEW_MESH = "New mesh"
 
 def newMesh(geom, name):
     """smeshBuilder.Mesh on geom with the CartesianGrid_3D algorithm and a new
@@ -90,46 +88,33 @@ class WizardRun:
 
 # ---------------------------------------------------------------------------- dialog
 
-from qtsalome import (QButtonGroup, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog,
-                      QGridLayout, QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox, QProgressBar,
-                      QPushButton, QRadioButton, QTimer, QVBoxLayout, QWidget)
+from qtsalome import (QButtonGroup, QCheckBox, QComboBox, QCoreApplication, QDialog, QDialogButtonBox,
+                      QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMessageBox,
+                      QProgressBar, QPushButton, QRadioButton, QTimer, QVBoxLayout, QWidget)
 
-COMPUTE_TIP = ("Creates the hexahedra in SMESH, to view the cells and the groups (one mesh group per "
-               "group of solids of the geometry).\nA SMESH mesh is unstructured: every node and "
-               "hexahedron is stored explicitly (about 760 bytes per cell), so it is much bigger and "
-               "slower than the Cartesian MED file,\nwhich stores only the grid coordinates and one "
-               "family per cell. Not needed for the export.")
-PREFIX_TIP = ("Geometry groups whose name starts with this prefix are the zones (cell groups) of the "
-              "MED file; empty: all groups.\nThe export works on the geometry: no SMESH cells are "
-              "needed.")
-GROUPS_TIP = ("One zone per geometry group named with the prefix (e.g. the MAT_ material groups of a "
-              "GDML world);\neach cell takes the zone of the solid containing its center.")
-SOLIDS_TIP = ("One zone per solid, no group needed. Zone names: the solid's name in the study (GEOM "
-              "solid published under the shape)\nor in SHAPER (sub-result, e.g. GDML volume name); "
-              "SOLID_<id> for an unnamed solid; _<id> is added to a name used by several solids.")
-MESH_TIP = ("Meshes of this geometry using the Cartesian Grid 3D algorithm. The wizard updates the "
-            "chosen one;\n\"New mesh\" creates another. Changing the grid of a computed mesh "
-            "clears its cells (SMESH keeps meshes consistent with their hypotheses).")
-FILE_TIP = "Cartesian MED file: grid coordinates and one family per cell (structured, compact)"
+def tr(key):
+    """text of key in CartesianGridPlugin_msg_<language>.ts (SALOME loads it at start)"""
+    return QCoreApplication.translate("CartesianGridPluginWizard", key)
+
 
 def _selectedGeometry():
     """(entry, GEOM_Object, name) of the single selected geometry (GEOM or SHAPER), or
     (None, None, reason)"""
     if salome.sg.SelectedCount() != 1:
-        return None, None, "Select one geometry in the object browser"
+        return None, None, tr("CARTESIANGRID_WIZ_SELECT_ONE")
     entry = salome.sg.getSelected(0)
     obj = salome.IDToObject(entry)
     geom = obj._narrow(GEOM.GEOM_Object) if obj is not None else None
     if geom is None:
-        return None, None, "The selected object is not a geometry"
+        return None, None, tr("CARTESIANGRID_WIZ_NOT_GEOMETRY")
     if str(geom.GetShapeType()) not in ("SOLID", "COMPSOLID", "COMPOUND"):
-        return None, None, "The selected geometry holds no solid"
+        return None, None, tr("CARTESIANGRID_WIZ_NO_SOLID")
     return entry, geom, salome.IDToSObject(entry).GetName()
 
 class WizardDialog(QDialog):
     def __init__(self, parent):
         QDialog.__init__(self, parent)
-        self.setWindowTitle(TITLE)
+        self.setWindowTitle(tr("CARTESIANGRID_WIZ_TITLE"))
         self.setMinimumWidth(520)
         self.geom = None
         self.geomName = ""
@@ -165,36 +150,36 @@ class WizardDialog(QDialog):
             return w
 
         # geometry
-        geomGrid = group("Geometry")
+        geomGrid = group(tr("CARTESIANGRID_WIZ_GEOMETRY"))
         self.geomField = QLineEdit()
         self.geomField.setReadOnly(True)
-        self.geomField.setPlaceholderText("Select a geometry (GEOM or SHAPER) in the object browser")
+        self.geomField.setPlaceholderText(tr("CARTESIANGRID_WIZ_GEOMETRY_HINT"))
         # SMESH style selection button: while pressed, the field follows the object browser
         self.selectBtn = QPushButton()
         self.selectBtn.setIcon(QIcon(os.path.join(os.environ.get("SMESH_ROOT_DIR", ""), "share", "salome",
                                                   "resources", "smesh", "select1.png")))
         self.selectBtn.setCheckable(True)
         self.selectBtn.setChecked(True)
-        self.selectBtn.setToolTip("While pressed, the geometry follows the selection in the object browser")
+        self.selectBtn.setToolTip(tr("CARTESIANGRID_WIZ_SELECT_TIP"))
         self.selectBtn.toggled.connect(self.selectionToggled)
-        addRow(geomGrid, "Shape", hbox(self.selectBtn, self.geomField))
+        addRow(geomGrid, tr("CARTESIANGRID_WIZ_SHAPE"), hbox(self.selectBtn, self.geomField))
         self.geomMessage = QLabel()
         self.geomMessage.setStyleSheet("color: red")
         self.geomMessage.setVisible(False)
         geomGrid.addWidget(self.geomMessage, geomGrid.rowCount(), 1)
 
         # mesh
-        meshGrid = group("Mesh")
+        meshGrid = group(tr("CARTESIANGRID_WIZ_MESH"))
         self.meshCombo = QComboBox()
-        self.meshCombo.setToolTip(MESH_TIP)
+        self.meshCombo.setToolTip(tr("CARTESIANGRID_WIZ_MESH_TIP"))
         self.meshCombo.currentIndexChanged.connect(self.meshChanged)
-        addRow(meshGrid, "Mesh", self.meshCombo)
+        addRow(meshGrid, tr("CARTESIANGRID_WIZ_MESH"), self.meshCombo)
         self.meshName = QLineEdit()
         self.meshName.textChanged.connect(self.updateRunTip)
-        self.meshNameLabel = addRow(meshGrid, "Name", self.meshName)
+        self.meshNameLabel = addRow(meshGrid, tr("CARTESIANGRID_WIZ_NAME"), self.meshName)
 
         # grid: the C++ panel of the hypothesis dialog
-        gridBox = QGroupBox("Grid")
+        gridBox = QGroupBox(tr("CARTESIANGRID_WIZ_GRID"))
         gridLayout = QVBoxLayout(gridBox)
         from salome.CartesianGridPlugin.CartesianGridPluginPanel import GridPanel
         self.panel = GridPanel(gridBox)
@@ -202,31 +187,31 @@ class WizardDialog(QDialog):
         layout.addWidget(gridBox, 1)
 
         # export
-        exportGrid = group("Export")
+        exportGrid = group(tr("CARTESIANGRID_WIZ_EXPORT"))
         self.file = QLineEdit()
-        self.file.setToolTip(FILE_TIP)
+        self.file.setToolTip(tr("CARTESIANGRID_WIZ_FILE_TIP"))
         self.file.textChanged.connect(self.updateRunTip)
         browse = QPushButton("...")
         browse.setFixedWidth(browse.fontMetrics().horizontalAdvance("...") + 24)
-        browse.setToolTip("Choose the MED file")
+        browse.setToolTip(tr("CARTESIANGRID_WIZ_BROWSE_TIP"))
         browse.clicked.connect(self.browse)
-        addRow(exportGrid, "MED file", hbox(self.file, browse))
-        self.groupsRadio = QRadioButton("Geometry groups named")
-        self.groupsRadio.setToolTip(GROUPS_TIP)
+        addRow(exportGrid, tr("CARTESIANGRID_WIZ_MED_FILE"), hbox(self.file, browse))
+        self.groupsRadio = QRadioButton(tr("CARTESIANGRID_WIZ_GROUPS"))
+        self.groupsRadio.setToolTip(tr("CARTESIANGRID_WIZ_GROUPS_TIP"))
         self.groupsRadio.setChecked(True)
         self.prefix = QLineEdit("MAT_")
-        self.prefix.setToolTip(PREFIX_TIP)
+        self.prefix.setToolTip(tr("CARTESIANGRID_WIZ_PREFIX_TIP"))
         self.prefix.textChanged.connect(self.updateRunTip)
-        addRow(exportGrid, "Zones", hbox(self.groupsRadio, self.prefix))
-        self.solidsRadio = QRadioButton("Solids, one zone per solid (named as in the study or SHAPER)")
-        self.solidsRadio.setToolTip(SOLIDS_TIP)
+        addRow(exportGrid, tr("CARTESIANGRID_WIZ_ZONES"), hbox(self.groupsRadio, self.prefix))
+        self.solidsRadio = QRadioButton(tr("CARTESIANGRID_WIZ_SOLIDS"))
+        self.solidsRadio.setToolTip(tr("CARTESIANGRID_WIZ_SOLIDS_TIP"))
         exportGrid.addWidget(self.solidsRadio, exportGrid.rowCount(), 1)
         self.zoneButtons = QButtonGroup(self)
         self.zoneButtons.addButton(self.groupsRadio)
         self.zoneButtons.addButton(self.solidsRadio)
         self.groupsRadio.toggled.connect(self.zoneSourceChanged)
-        self.computeBox = QCheckBox("Also compute the SMESH mesh")
-        self.computeBox.setToolTip(COMPUTE_TIP)
+        self.computeBox = QCheckBox(tr("CARTESIANGRID_WIZ_COMPUTE"))
+        self.computeBox.setToolTip(tr("CARTESIANGRID_WIZ_COMPUTE_TIP"))
         self.computeBox.toggled.connect(self.updateRunTip)
         exportGrid.addWidget(self.computeBox, exportGrid.rowCount(), 1)
 
@@ -239,7 +224,7 @@ class WizardDialog(QDialog):
         self.progress.setVisible(False)
         layout.addWidget(self.progress)
         self.buttons = QDialogButtonBox()
-        self.runBtn = self.buttons.addButton("Run", QDialogButtonBox.AcceptRole)
+        self.runBtn = self.buttons.addButton(tr("CARTESIANGRID_WIZ_RUN"), QDialogButtonBox.AcceptRole)
         self.closeBtn = self.buttons.addButton(QDialogButtonBox.Close)
         self.runBtn.clicked.connect(self.start)
         self.closeBtn.clicked.connect(self.closeOrCancel)
@@ -298,7 +283,7 @@ class WizardDialog(QDialog):
         self.meshCombo.clear()
         for name, _ in self.meshes:
             self.meshCombo.addItem(name)
-        self.meshCombo.addItem(NEW_MESH)
+        self.meshCombo.addItem(tr("CARTESIANGRID_WIZ_NEW_MESH"))
         index = 0
         for i, (_, m) in enumerate(self.meshes):
             if current is not None and m._is_equivalent(current):
@@ -328,7 +313,7 @@ class WizardDialog(QDialog):
                 try:
                     self.panel.load(hyp)
                 except RuntimeError as e:
-                    QMessageBox.warning(self, TITLE, str(e))
+                    QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), str(e))
         self.file.setText(os.path.join(os.path.expanduser("~"), name + ".med"))
         self.updateRunButton()
 
@@ -340,32 +325,29 @@ class WizardDialog(QDialog):
     def updateRunTip(self, *args):
         """tooltip of Run: what a run does with the current options"""
         if self.geom is None:
-            self.runBtn.setToolTip("Select a geometry first")
+            self.runBtn.setToolTip(tr("CARTESIANGRID_WIZ_SELECT_FIRST"))
             return
         mesh = self.selectedMesh()
         steps = []
         if mesh is None:
-            steps.append('Create the mesh "%s" on %s with the Cartesian Grid 3D algorithm and a Cartesian Grid '
-                         'Parameters hypothesis holding the grid above; it stays in the study.'
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_NEW_MESH")
                          % (self.meshName.text().strip() or "CartesianGrid", self.geomName))
         else:
-            steps.append('Write the grid above to the hypothesis of the mesh "%s" (a computed mesh is cleared '
-                         'if the grid changed).' % self.meshCombo.currentText())
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_MESH") % self.meshCombo.currentText())
         if self.computeBox.isChecked():
-            steps.append("Compute the SMESH mesh: unstructured hexahedra, every node and cell stored "
-                         "(about 760 bytes per cell); then one mesh group per geometry group of solids "
-                         "(names already used are skipped).")
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_COMPUTE"))
         else:
-            steps.append("No SMESH cells are created (the mesh only holds the algorithm and the grid).")
+            steps.append(tr("CARTESIANGRID_WIZ_STEP_NO_COMPUTE"))
         prefix = self.prefix.text()
         if self.zoneSource() == "solids":
-            zones = "one per solid, named as in the study or SHAPER"
+            zones = tr("CARTESIANGRID_WIZ_ZONES_SOLIDS")
         else:
-            zones = "geometry groups %s" % ('named "%s*"' % prefix if prefix else "(all groups)")
-        steps.append("Write the Cartesian MED file %s: grid coordinates and one family per cell; zones = %s."
-                     % (self.file.text().strip() or "(no file name)", zones))
+            zones = (tr("CARTESIANGRID_WIZ_ZONES_PREFIX") % prefix if prefix else tr("CARTESIANGRID_WIZ_ZONES_ALL"))
+        steps.append(tr("CARTESIANGRID_WIZ_STEP_EXPORT")
+                     % (self.file.text().strip() or tr("CARTESIANGRID_WIZ_NO_FILE_NAME"), zones))
         # rich text: Qt wraps it
-        self.runBtn.setToolTip("<b>Run</b><ol>%s</ol>" % "".join("<li>%s</li>" % html.escape(t) for t in steps))
+        self.runBtn.setToolTip("<b>%s</b><ol>%s</ol>" % (html.escape(tr("CARTESIANGRID_WIZ_RUN").replace("&", "")),
+                                                         "".join("<li>%s</li>" % html.escape(t) for t in steps)))
 
     def zoneSource(self):
         return "solids" if self.solidsRadio.isChecked() else "geometry"
@@ -375,7 +357,8 @@ class WizardDialog(QDialog):
         self.updateRunTip()
 
     def browse(self):
-        f, _ = QFileDialog.getSaveFileName(self, "MED file", self.file.text(), "MED files (*.med)")
+        f, _ = QFileDialog.getSaveFileName(self, tr("CARTESIANGRID_WIZ_MED_FILE"), self.file.text(),
+                                       tr("CARTESIANGRID_WIZ_MED_FILTER"))
         if f:
             self.file.setText(f if f.endswith(".med") else f + ".med")
 
@@ -386,11 +369,11 @@ class WizardDialog(QDialog):
         try:
             self.panel.check()
         except RuntimeError as e:
-            QMessageBox.warning(self, TITLE, str(e))
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), str(e))
             return
         fileName = self.file.text().strip()
         if not fileName:
-            QMessageBox.warning(self, TITLE, "Give a file name")
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), tr("CARTESIANGRID_WIZ_NO_FILE"))
             return
         fileName = os.path.abspath(os.path.expanduser(fileName))  # the engine runs in the SMESH container
         smesh = smeshBuilder.New()
@@ -405,10 +388,10 @@ class WizardDialog(QDialog):
             self.run = WizardRun(mesh, fileName, self.computeBox.isChecked(), self.prefix.text(),
                                  self.zoneSource())
         except (RuntimeError, ValueError) as e:
-            QMessageBox.warning(self, TITLE, str(e))
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), str(e))
             return
         except SALOME.SALOME_Exception as e:
-            QMessageBox.warning(self, TITLE, e.details.text)
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), e.details.text)
             return
         if corba is None:   # the new mesh becomes the current one
             self.fillMeshes(mesh.GetMesh())
@@ -426,7 +409,7 @@ class WizardDialog(QDialog):
         self.result = None
         self.worker = threading.Thread(target=work)
         self.updateRunButton()
-        self.closeBtn.setText("Cancel")
+        self.closeBtn.setText(tr("CARTESIANGRID_WIZ_CANCEL"))
         self.progress.setValue(0)
         self.progress.setVisible(True)
         self.worker.start()
@@ -434,21 +417,21 @@ class WizardDialog(QDialog):
 
     def poll(self):
         if self.worker.is_alive():
-            phase = {"compute": "Computing the SMESH mesh %p%", "export": "Exporting %p%"}
+            phase = {"compute": tr("CARTESIANGRID_WIZ_COMPUTING"), "export": tr("CARTESIANGRID_WIZ_EXPORTING")}
             self.progress.setFormat(phase.get(self.run.phase, "%p%"))
             self.progress.setValue(int(100 * self.run.progress()))
             return
         self.timer.stop()
         self.worker = None
         self.progress.setVisible(False)
-        self.closeBtn.setText("Close")
+        self.closeBtn.setText(tr("CARTESIANGRID_WIZ_CLOSE"))
         self.updateRunButton()
         salome.sg.updateObjBrowser()
         kind, text = self.result
         if kind == "ok" and "warning" not in text.lower():
-            QMessageBox.information(self, TITLE, text)
+            QMessageBox.information(self, tr("CARTESIANGRID_WIZ_TITLE"), text)
         else:
-            QMessageBox.warning(self, TITLE, text)
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), text)
 
     def closeOrCancel(self):
         if self.worker is not None:
@@ -481,7 +464,7 @@ def run(context):
         dialog = WizardDialog(parent)
     except OSError as e:
         from salome.CartesianGridPlugin.CartesianGridPluginPanel import libraryPath
-        QMessageBox.warning(parent, TITLE, "Cannot load the grid panel library %s:\n%s" % (libraryPath(), e))
+        QMessageBox.warning(parent, tr("CARTESIANGRID_WIZ_TITLE"), tr("CARTESIANGRID_WIZ_NO_LIBRARY") % (libraryPath(), e))
         return
     _dialog = dialog
     dialog.show()

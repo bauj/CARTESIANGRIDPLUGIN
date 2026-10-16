@@ -3,12 +3,14 @@
 # Entries of CARTESIANGRIDPLUGIN in Mesh > SMESH plugins (found through CARTESIANGRIDPLUGIN_ROOT_DIR)
 
 import salome_pluginsmanager
+from qtsalome import QCoreApplication
 
 def cartesianGridWizard(context):
     from salome.CartesianGridPlugin import CartesianGridPluginWizard
     CartesianGridPluginWizard.run(context)
 
-salome_pluginsmanager.AddFunction("Cartesian Grid Wizard",
-                                  "Geometry to Cartesian MED file in one dialog: grid, export, and "
-                                  "optionally the SMESH mesh",
+def tr(key):
+    return QCoreApplication.translate("CartesianGridPluginWizard", key)
+
+salome_pluginsmanager.AddFunction(tr("CARTESIANGRID_WIZ_TITLE"), tr("CARTESIANGRID_WIZ_MENU_TIP"),
                                   cartesianGridWizard)

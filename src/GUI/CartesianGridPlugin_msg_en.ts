@@ -39,4 +39,58 @@
     <message><source>CARTESIANGRID_ACTUAL</source><translation>Actual: %1 cells, step %2</translation></message>
     <message><source>CARTESIANGRID_ACTUAL_NONE</source><translation>Actual: -</translation></message>
 </context>
+<context>
+    <name>CartesianGridPluginWizard</name>
+    <message><source>CARTESIANGRID_WIZ_TITLE</source><translation>Cartesian Grid Wizard</translation></message>
+    <message><source>CARTESIANGRID_WIZ_MENU_TIP</source><translation>Geometry to Cartesian MED file in one dialog: grid, export, and optionally the SMESH mesh</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SELECT_ONE</source><translation>Select one geometry in the object browser</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NOT_GEOMETRY</source><translation>The selected object is not a geometry</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_SOLID</source><translation>The selected geometry holds no solid</translation></message>
+    <message><source>CARTESIANGRID_WIZ_GEOMETRY</source><translation>Geometry</translation></message>
+    <message><source>CARTESIANGRID_WIZ_GEOMETRY_HINT</source><translation>Select a geometry (GEOM or SHAPER) in the object browser</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SELECT_TIP</source><translation>While pressed, the geometry follows the selection in the object browser</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SHAPE</source><translation>Shape</translation></message>
+    <message><source>CARTESIANGRID_WIZ_MESH</source><translation>Mesh</translation></message>
+    <message><source>CARTESIANGRID_WIZ_MESH_TIP</source><translation>Meshes of this geometry using the Cartesian Grid 3D algorithm. The wizard updates the chosen one;
+&quot;New mesh&quot; creates another. Changing the grid of a computed mesh clears its cells (SMESH keeps meshes consistent with their hypotheses).</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NAME</source><translation>Name</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NEW_MESH</source><translation>New mesh</translation></message>
+    <message><source>CARTESIANGRID_WIZ_GRID</source><translation>Grid</translation></message>
+    <message><source>CARTESIANGRID_WIZ_EXPORT</source><translation>Export</translation></message>
+    <message><source>CARTESIANGRID_WIZ_MED_FILE</source><translation>MED file</translation></message>
+    <message><source>CARTESIANGRID_WIZ_FILE_TIP</source><translation>Cartesian MED file: grid coordinates and one family per cell (structured, compact)</translation></message>
+    <message><source>CARTESIANGRID_WIZ_BROWSE_TIP</source><translation>Choose the MED file</translation></message>
+    <message><source>CARTESIANGRID_WIZ_MED_FILTER</source><translation>MED files (*.med)</translation></message>
+    <message><source>CARTESIANGRID_WIZ_ZONES</source><translation>Zones</translation></message>
+    <message><source>CARTESIANGRID_WIZ_GROUPS</source><translation>Geometry groups named</translation></message>
+    <message><source>CARTESIANGRID_WIZ_GROUPS_TIP</source><translation>One zone per geometry group named with the prefix (e.g. the MAT_ material groups of a GDML world);
+each cell takes the zone of the solid containing its center.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_PREFIX_TIP</source><translation>Geometry groups whose name starts with this prefix are the zones (cell groups) of the MED file; empty: all groups.
+The export works on the geometry: no SMESH cells are needed.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SOLIDS</source><translation>Solids, one zone per solid (named as in the study or SHAPER)</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SOLIDS_TIP</source><translation>One zone per solid, no group needed. Zone names: the solid&apos;s name in the study (GEOM solid published under the shape)
+or in SHAPER (sub-result, e.g. GDML volume name); SOLID_&lt;id&gt; for an unnamed solid; _&lt;id&gt; is added to a name used by several solids.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_COMPUTE</source><translation>Also compute the SMESH mesh</translation></message>
+    <message><source>CARTESIANGRID_WIZ_COMPUTE_TIP</source><translation>Creates the hexahedra in SMESH, to view the cells and the groups (one mesh group per group of solids of the geometry).
+A SMESH mesh is unstructured: every node and hexahedron is stored explicitly (about 760 bytes per cell), so it is much bigger and slower than the Cartesian MED file,
+which stores only the grid coordinates and one family per cell. Not needed for the export.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_RUN</source><translation>Run</translation></message>
+    <message><source>CARTESIANGRID_WIZ_CANCEL</source><translation>Cancel</translation></message>
+    <message><source>CARTESIANGRID_WIZ_CLOSE</source><translation>Close</translation></message>
+    <message><source>CARTESIANGRID_WIZ_SELECT_FIRST</source><translation>Select a geometry first</translation></message>
+    <message><source>CARTESIANGRID_WIZ_STEP_NEW_MESH</source><translation>Create the mesh &quot;%s&quot; on %s with the Cartesian Grid 3D algorithm and a Cartesian Grid Parameters hypothesis holding the grid above; it stays in the study.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_STEP_MESH</source><translation>Write the grid above to the hypothesis of the mesh &quot;%s&quot; (a computed mesh is cleared if the grid changed).</translation></message>
+    <message><source>CARTESIANGRID_WIZ_STEP_COMPUTE</source><translation>Compute the SMESH mesh: unstructured hexahedra, every node and cell stored (about 760 bytes per cell); then one mesh group per geometry group of solids (names already used are skipped).</translation></message>
+    <message><source>CARTESIANGRID_WIZ_STEP_NO_COMPUTE</source><translation>No SMESH cells are created (the mesh only holds the algorithm and the grid).</translation></message>
+    <message><source>CARTESIANGRID_WIZ_STEP_EXPORT</source><translation>Write the Cartesian MED file %s: grid coordinates and one family per cell; zones = %s.</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_FILE_NAME</source><translation>(no file name)</translation></message>
+    <message><source>CARTESIANGRID_WIZ_ZONES_SOLIDS</source><translation>one per solid, named as in the study or SHAPER</translation></message>
+    <message><source>CARTESIANGRID_WIZ_ZONES_PREFIX</source><translation>geometry groups named &quot;%s*&quot;</translation></message>
+    <message><source>CARTESIANGRID_WIZ_ZONES_ALL</source><translation>geometry groups (all groups)</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_FILE</source><translation>Give a file name</translation></message>
+    <message><source>CARTESIANGRID_WIZ_COMPUTING</source><translation>Computing the SMESH mesh %p%</translation></message>
+    <message><source>CARTESIANGRID_WIZ_EXPORTING</source><translation>Exporting %p%</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_LIBRARY</source><translation>Cannot load the grid panel library %s:
+%s</translation></message>
+</context>
 </TS>
