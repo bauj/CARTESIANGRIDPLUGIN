@@ -79,6 +79,8 @@ which stores only the grid coordinates and one family per cell. Not needed for t
     <message><source>CARTESIANGRID_WIZ_RUN</source><translation>Run</translation></message>
     <message><source>CARTESIANGRID_WIZ_CANCEL</source><translation>Cancel</translation></message>
     <message><source>CARTESIANGRID_WIZ_CLOSE</source><translation>Close</translation></message>
+    <message><source>CARTESIANGRID_WIZ_HELP</source><translation>Help</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_HELP</source><translation>The user&apos;s guide is not installed (CARTESIANGRIDPLUGIN built with SALOME_BUILD_DOC=OFF).</translation></message>
     <message><source>CARTESIANGRID_WIZ_SELECT_FIRST</source><translation>Select a geometry first</translation></message>
     <message><source>CARTESIANGRID_WIZ_STEP_NEW_MESH</source><translation>Create the mesh &quot;%s&quot; on %s with the Cartesian Grid 3D algorithm and a Cartesian Grid Parameters hypothesis holding the grid above; it stays in the study.</translation></message>
     <message><source>CARTESIANGRID_WIZ_STEP_MESH</source><translation>Write the grid above to the hypothesis of the mesh &quot;%s&quot; (a computed mesh is cleared if the grid changed).</translation></message>

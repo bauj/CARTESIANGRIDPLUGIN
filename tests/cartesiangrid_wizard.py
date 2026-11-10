@@ -2,7 +2,7 @@
 # LGPL 2.1 or later (see COPYING)
 # Cartesian Grid Wizard run logic (no GUI): meshes found on a geometry, export without and with
 # the SMESH mesh, groups on geometry (solid groups only, no duplicates), compute failure; GEOM and
-# SHAPER geometries
+# SHAPER geometries; pages opened by the Help buttons
 import os
 import tempfile
 import salome
@@ -13,7 +13,7 @@ import medcoupling as mc
 from salome.geom import geomBuilder
 from salome.smesh import smeshBuilder
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder as Builder
-from salome.CartesianGridPlugin.CartesianGridPluginWizard import WizardRun, newMesh, parametersOf
+from salome.CartesianGridPlugin.CartesianGridPluginWizard import WizardRun, helpPage, newMesh, parametersOf
 geompy = geomBuilder.New()
 smesh = smeshBuilder.New()
 
@@ -200,4 +200,13 @@ f4 = os.path.join(tmp, "shaper.med")
 WizardRun(smesh3, f4, True, "MAT_").run()
 assert medGroups(f4) == expected, medGroups(f4)
 assert meshGroups(smesh3) == expected, meshGroups(smesh3)
+
+# Help buttons: when the user's guide is installed, the pages of the wizard and of the hypothesis dialog
+# (CartesianGridPluginGUI_HypothesisCreator::helpPage) exist
+guide = os.path.join(os.environ["CARTESIANGRIDPLUGIN_ROOT_DIR"], "share", "doc", "salome", "gui", "CARTESIANGRIDPLUGIN")
+if os.path.isdir(guide):
+    assert helpPage() == os.path.join(guide, "cartesiangridplugin_wizard_page.html"), helpPage()
+    assert os.path.isfile(os.path.join(guide, "cartesiangridplugin_hypo_page.html"))
+else:
+    assert helpPage() is None
 print("OK")

@@ -14,6 +14,13 @@ from salome.smesh import smeshBuilder
 from salome.CartesianGridPlugin import CartesianGridPluginBuilder as Builder
 
 
+def helpPage():
+    """path of the wizard page of the user's guide, in the CARTESIANGRIDPLUGIN installation;
+    None when the documentation is not installed (built with SALOME_BUILD_DOC=OFF)"""
+    page = os.path.join(os.environ.get("CARTESIANGRIDPLUGIN_ROOT_DIR", ""), "share", "doc", "salome", "gui",
+                        "CARTESIANGRIDPLUGIN", "cartesiangridplugin_wizard_page.html")
+    return page if os.path.isfile(page) else None
+
 def newMesh(geom, name):
     """smeshBuilder.Mesh on geom with the CartesianGrid_3D algorithm and a new
     CartesianGridParameters hypothesis"""
@@ -322,8 +329,10 @@ class WizardDialog(QDialog):
         self.buttons = QDialogButtonBox()
         self.runBtn = self.buttons.addButton(tr("CARTESIANGRID_WIZ_RUN"), QDialogButtonBox.AcceptRole)
         self.closeBtn = self.buttons.addButton(QDialogButtonBox.Close)
+        self.helpBtn = self.buttons.addButton(tr("CARTESIANGRID_WIZ_HELP"), QDialogButtonBox.HelpRole)
         self.runBtn.clicked.connect(self.start)
         self.closeBtn.clicked.connect(self.closeOrCancel)
+        self.helpBtn.clicked.connect(self.showHelp)
         layout.addWidget(self.buttons)
 
         self.timer = QTimer(self)
@@ -341,6 +350,15 @@ class WizardDialog(QDialog):
             pass
 
     # ---- geometry and mesh
+    def showHelp(self):
+        """the wizard page of the user's guide in the SALOME help browser, as the SMESH Python plugins"""
+        page = helpPage()
+        if page is None:
+            QMessageBox.warning(self, tr("CARTESIANGRID_WIZ_TITLE"), tr("CARTESIANGRID_WIZ_NO_HELP"))
+            return
+        import SalomePyQt   # GUI only
+        SalomePyQt.SalomePyQt.helpContext(page, "")
+
     def setGeomMessage(self, text):
         self.geomMessage.setText(text)
         self.geomMessage.setVisible(bool(text))

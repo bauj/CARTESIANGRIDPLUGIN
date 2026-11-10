@@ -79,6 +79,8 @@ qui ne stocke que les coordonnées de la grille et une famille par maille. Inuti
     <message><source>CARTESIANGRID_WIZ_RUN</source><translation>Exécuter</translation></message>
     <message><source>CARTESIANGRID_WIZ_CANCEL</source><translation>Annuler</translation></message>
     <message><source>CARTESIANGRID_WIZ_CLOSE</source><translation>Fermer</translation></message>
+    <message><source>CARTESIANGRID_WIZ_HELP</source><translation>Aide</translation></message>
+    <message><source>CARTESIANGRID_WIZ_NO_HELP</source><translation>Le guide utilisateur n&apos;est pas installé (CARTESIANGRIDPLUGIN compilé avec SALOME_BUILD_DOC=OFF).</translation></message>
     <message><source>CARTESIANGRID_WIZ_SELECT_FIRST</source><translation>Sélectionner d&apos;abord une géométrie</translation></message>
     <message><source>CARTESIANGRID_WIZ_STEP_NEW_MESH</source><translation>Créer le maillage « %s » sur %s avec l&apos;algorithme Cartesian Grid 3D et une hypothèse Cartesian Grid Parameters contenant la grille ci-dessus ; il reste dans l&apos;étude.</translation></message>
     <message><source>CARTESIANGRID_WIZ_STEP_MESH</source><translation>Écrire la grille ci-dessus dans l&apos;hypothèse du maillage « %s » (un maillage calculé est effacé si la grille a changé).</translation></message>
