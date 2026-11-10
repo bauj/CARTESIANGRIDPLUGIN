@@ -1,0 +1,29 @@
+# Copyright (C) 2026  CARTESIANGRIDPLUGIN authors
+# LGPL 2.1 or later (see COPYING)
+
+PROJECT_NAME      = "SALOME CARTESIANGRIDPLUGIN User's Guide v.@SALOMECARTESIANGRIDPLUGIN_VERSION@"
+OUTPUT_DIRECTORY  = CARTESIANGRIDPLUGIN
+CREATE_SUBDIRS	  = NO
+OUTPUT_LANGUAGE   = English
+TAB_SIZE          = 5
+QUIET             = NO
+WARNINGS          = YES
+INPUT             = @CMAKE_CURRENT_SOURCE_DIR@/input
+FILE_PATTERNS     = *.doc
+IMAGE_PATH        = @CMAKE_CURRENT_SOURCE_DIR@/images
+EXAMPLE_PATH      = @CMAKE_SOURCE_DIR@/doc/salome/examples 
+GENERATE_HTML     = YES
+HTML_OUTPUT       = .
+HTML_HEADER       = @CMAKE_CURRENT_BINARY_DIR@/static/header.html
+HTML_FOOTER       = @CMAKE_CURRENT_SOURCE_DIR@/static/footer.html
+HTML_EXTRA_STYLESHEET = @CMAKE_CURRENT_SOURCE_DIR@/static/salome_extra.css
+HTML_EXTRA_FILES      = @CMAKE_CURRENT_SOURCE_DIR@/images/head.png
+TOC_EXPAND        = YES
+DISABLE_INDEX     = NO
+GENERATE_TREEVIEW = YES
+TREEVIEW_WIDTH    = 300
+GENERATE_LATEX    = NO
+GENERATE_RTF      = NO
+TAGFILES          = cartesiangridpluginpy_doc.tag=../CARTESIANGRIDPLUGIN/cartesiangridpluginpy_doc
+SEARCHENGINE      = YES
+ALIASES += tui_script{1}="\include \1 <a href=\"../../examples/CARTESIANGRIDPLUGIN/\1\">Download this script</a>"

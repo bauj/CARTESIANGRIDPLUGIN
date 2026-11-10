@@ -1,0 +1,63 @@
+/*!
+
+\page cartesiangridplugin_hypo_page Cartesian Grid Parameters hypothesis
+
+The <b>Cartesian Grid 3D</b> algorithm needs one <b>Cartesian Grid Parameters</b> hypothesis. In the <b>Create
+Mesh</b> dialog, choose the algorithm on the 3D tab, then create the hypothesis with the button next to it. Both must be
+assigned to the main shape (the whole geometry).
+
+The hypothesis says where the grid lines are. The dialog has one tab per axis (X, Y and Z), and each axis is set
+independently: you can use a different mode on each axis.
+
+<h2>The extent of the grid</h2>
+
+By default the grid covers the <b>bounding box of the solids</b>: the smallest box, aligned with the axes, that contains
+all the solids of the geometry. Only the solids count: construction points, edges or faces that are not part of a solid
+do not make the grid bigger. In the modes below, "the extent" of an axis means the length of this bounding box along
+that axis.
+
+<h2>The four modes of an axis</h2>
+
+- <b>Nb cells</b>: you give the number of cells n. The extent is divided into n equal cells.
+- <b>Step</b>: you give the size s you would like for a cell. The plug-in computes the number of cells as the extent
+  divided by s, rounded to the nearest whole number (at least 1), and then adjusts the cell size slightly so that the
+  cells cover the bounding box exactly. The real cell size can therefore be a little different from s.
+- <b>Coordinates</b>: you give the exact positions of the grid lines along the axis, as a sorted list of at least 2
+  different values. This lets you use cells of different sizes. Here the grid goes from the first value to the last one,
+  whatever the size of the bounding box: if a solid sticks out beyond these values, that part of the solid is not
+  meshed, and a warning tells you so.
+
+  In the dialog:
+  - the list starts with the two bounds of the shape along that axis;
+  - \b Insert adds a value after the selected one (the selected value plus the "insert step");
+  - \b Delete removes the selected values;
+  - \b Copy copies the selected values (or all of them) to the clipboard, and \b Paste adds numbers copied from another
+    axis, from a text file or from a spreadsheet. Ctrl+C and Ctrl+V also work on the list;
+  - to select several values, hold Ctrl or Shift while clicking.
+- <b>Spacing</b>: the cell size varies along the axis according to a function that you write, as in the Body Fitting
+  algorithm of SMESH. Along the axis, a parameter t goes from 0 (start of the bounding box) to 1 (end of the bounding
+  box), and the function f(t) gives the cell size at that position.
+
+  You can also split the axis into several ranges by giving "internal points" between 0 and 1, with one function per
+  range. Within each range, t again goes from 0 to 1. In the dialog, the table lists the ranges with their columns
+  <i>From t</i>, <i>To t</i> and <i>f(t)</i>: \b Insert splits the selected range into two, and \b Delete merges it
+  with its neighbour. A single range can hold at most about 1000 cells: for a finer grid, add internal points.
+
+<h2>Cells outside all solids</h2>
+
+This option decides what happens to the cells whose center is in no solid:
+- \b Remove (the default): these cells are not created.
+- \b Keep: these cells are created too, and attached to the main shape instead of a solid. This requires the main shape
+  to be a compound (a shape that groups several shapes). A warning gives the number of cells kept this way.
+
+<h2>Getting one mesh group per material</h2>
+
+In the geometry, create one group of solids per material. If your geometry comes from a GDML file imported in SHAPER,
+the command <i>Create material groups</i> creates these groups for you, named <code>MAT_&lt;material&gt;</code>.
+Then, in the <b>Create Mesh</b> dialog, check <b>Create all groups on geometry</b>: after the compute, the mesh has
+one group of hexahedra per material.
+
+The same groups are used to give each cell its material in the
+\ref cartesiangridplugin_export_page "Cartesian MED export".
+
+*/

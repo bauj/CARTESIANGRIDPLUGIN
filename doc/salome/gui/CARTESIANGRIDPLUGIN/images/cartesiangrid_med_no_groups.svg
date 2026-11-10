@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#000"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="10" y="10" width="740" height="280" fill="#fff" stroke="#000" stroke-width="1.4"/>
+<text xml:space="preserve" x="20" y="32" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" text-anchor="start" fill="#000">grid.med, written without zone groups</text>
+<rect x="20" y="44" width="720" height="236" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="20" y="44" width="720" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="28" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cartesian mesh "Mesh_1"</text>
+<text xml:space="preserve" x="732" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">same structure as above</text>
+<rect x="32" y="80" width="696" height="56" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="80" width="696" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="97" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Node coordinates per axis</text>
+<text xml:space="preserve" x="720" y="97" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">unchanged: the full grid</text>
+<text xml:space="preserve" x="42" y="126" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">X: [x0 … xnx]   Y: [y0 … yny]   Z: [z0 … znz]</text>
+<rect x="32" y="148" width="696" height="56" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="148" width="696" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="165" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cell family numbers</text>
+<text xml:space="preserve" x="720" y="165" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">still nx·ny·nz values, all 0, inside and outside the solids alike</text>
+<text xml:space="preserve" x="42" y="194" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="12" font-weight="normal" text-anchor="start" fill="#000">FAM = [0, 0, 0, 0, 0, 0, 0, …, 0]</text>
+<rect x="32" y="216" width="696" height="56" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="216" width="696" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="233" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Family table</text>
+<text xml:space="preserve" x="720" y="233" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">the only family; no group at all</text>
+<text xml:space="preserve" x="42" y="262" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">0</text>
+<text xml:space="preserve" x="152" y="262" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">FAMILLE_ZERO</text>
+<text xml:space="preserve" x="302" y="262" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">no group</text>
+</svg>

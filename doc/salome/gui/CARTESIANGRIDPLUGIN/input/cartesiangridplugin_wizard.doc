@@ -1,0 +1,55 @@
+/*!
+
+\page cartesiangridplugin_wizard_page Cartesian Grid Wizard
+
+The wizard does in a single dialog everything needed to go from a geometry to a Cartesian MED file: create or update the
+mesh, set the grid, write the file, and optionally compute the mesh. You don't need to go through the <b>Create Mesh</b>
+dialog first. Open it with <b>Mesh > SMESH plugins > Cartesian Grid Wizard</b>.
+
+\image html cartesiangrid_wizard.png "Cartesian Grid Wizard"
+
+<h2>The fields of the dialog</h2>
+
+- \b Geometry: the shape to mesh. While the selection button next to the field is pressed, the field follows what you
+  select in the Object Browser (a GEOM or SHAPER shape). The dialog does not block the rest of SALOME, so you can select
+  objects while it is open.
+- \b Mesh: the list shows the existing meshes of this geometry that use the Cartesian Grid 3D algorithm, plus
+  <i>New mesh</i>.
+  - If you choose an existing mesh, the wizard updates it. If that mesh has the algorithm but no hypothesis yet, the
+    wizard adds a Cartesian Grid Parameters hypothesis to it.
+  - If you choose <i>New mesh</i>, the wizard creates a mesh with the algorithm and the hypothesis. This mesh stays in
+    the study as an ordinary mesh, that you can open and edit later like any other.
+- \b Grid: the same tabs as in the \ref cartesiangridplugin_hypo_page "hypothesis dialog", one per axis. They show the
+  grid of the chosen mesh.
+- \b Export: the name of the MED file to write, and how the zones of the file are chosen:
+  - <i>Geometry groups named</i> a prefix (<code>MAT_</code> by default): each geometry group whose name starts with
+    this prefix becomes a zone;
+  - <i>Solids, one zone per solid</i>: each solid becomes a zone, named after the solid.
+
+  See \ref cartesiangridplugin_export_page "Cartesian MED export" for details.
+- <b>Also compute the SMESH mesh</b> (optional): also builds the hexahedra in SMESH, and creates one mesh group per
+  geometry group of solids. A group is skipped if its name is already used by a mesh group, or if it holds faces or
+  edges instead of solids. Building the SMESH mesh is only needed if you want to look at the cells: an SMESH mesh
+  stores every node and every hexahedron, so it is much bigger and slower to create than the Cartesian MED file.
+
+<h2>Running</h2>
+
+\b Run first writes the MED file, then computes the mesh if you asked for it. A progress bar shows the progress, and the
+\b Cancel button stops the run. The MED file does not need the computed mesh, so if the compute fails or is canceled,
+the MED file is kept and the summary shows a warning.
+
+The dialog stays open after a run, so you can change a setting and run again. Note that if you change the grid of a
+mesh that was already computed, its cells are cleared until it is computed again.
+
+At the end of a run, a summary shows what was done, in two parts:
+- <b>SMESH mesh</b> (only when the mesh was computed): the number of hexahedra, the mesh groups created from the
+  geometry groups and those that were skipped, and the compute warnings;
+- <b>MED file</b>: the file name, how the zones were chosen, the size of the grid, the number of cells in each zone
+  and in no zone, and notes about the zone names (see
+  \ref cartesiangridplugin_export_solids "One zone per solid").
+
+If anything went wrong, the summary is shown as a warning.
+
+\b Help opens this page.
+
+*/

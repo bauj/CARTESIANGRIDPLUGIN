@@ -1,0 +1,189 @@
+/*!
+
+\page cartesiangridplugin_algorithm_page How the algorithm works
+
+This page explains what happens inside the <b>Cartesian Grid 3D</b> algorithm. You don't need it to use the plug-in,
+but it helps to understand the messages, the timings and the limits.
+
+The algorithm handles all the solids of the main shape together, in one pass. It does not need a surface mesh first
+(unlike algorithms that mesh the faces before the volume), and it does not support sub-meshes. In these respects it
+behaves like the Body Fitting algorithm of SMESH.
+
+<h2>The steps of a compute</h2>
+
+-# <b>Clean up.</b> If an earlier compute left cells attached to the main shape (cells outside the solids kept with the
+   \b Keep option), they are removed first. This is done even if the new compute fails later.
+-# <b>Check the inputs.</b> The algorithm must be assigned to every solid of the main shape. The \b Keep option needs a
+   main shape that is a compound. Every solid must be closed. The solids are then sorted from the smallest volume to the
+   largest, for the "smallest solid wins" rule.
+-# <b>Build the grid.</b> The bounding box is computed from the solids only, so construction points and faces do not
+   make the grid bigger. The hypothesis then gives the positions of the grid lines along each axis. If the grid is too
+   large to be stored in memory, it is refused at this point, before anything is allocated. If grid lines given as
+   coordinates cut a solid, a warning says so.
+-# <b>Find the owner of each cell.</b> For every cell, the algorithm finds the smallest solid containing its center, or
+   notes that the cell is outside all solids. This is the most delicate step; it is explained in
+   \ref cartesiangridplugin_scanline "The scanline classifier" below.
+-# <b>Create the mesh.</b> The cells are visited one layer at a time (k), one row at a time (j), one cell at a time (i).
+   The cells that have an owner solid are created first, then the kept outside cells. Neighbouring hexahedra share
+   their corner nodes. Each hexahedron is attached to its owner solid, or to the main shape for cells outside all
+   solids.
+-# <b>Finish.</b> A solid that got no cell produces a warning (not an error). Other warnings report the number of kept
+   outside cells, the cell centers that the geometry kernel could not locate, and the solids cut by coordinate grid
+   lines.
+
+Three related commands:
+- <b>Evaluate</b> runs the same checks and visits the cells in the same order, but creates nothing. This gives the exact
+  number of nodes and hexahedra for each solid, before you compute.
+- <b>Cancel</b>: the algorithm checks for a cancel request after each row of cells, while finding the owners and while
+  creating the mesh. A canceled compute removes everything it had created, so no half-built mesh is left behind.
+- <b>Progress</b>: finding the owners counts for 20 % of the progress bar, and creating the nodes and hexahedra for
+  80 %, because that is roughly how the time is shared.
+
+\anchor cartesiangridplugin_scanline
+<h2>The scanline classifier</h2>
+
+"Classifying" a cell means finding which solid contains its center. This section explains how the plug-in does it fast.
+
+<h3>The slow way: one test per cell</h3>
+
+The geometry kernel of SALOME (OpenCASCADE) can tell whether a point is inside a solid: this is the class
+<code>BRepClass3d_SolidClassifier</code>. To answer, it sends a ray from the point and computes where the ray crosses
+the faces of the solid, using the exact surfaces (planes, spheres, B-splines...). This is an expensive calculation.
+
+The simple method tests every cell center against the solids, from the smallest to the largest, until one solid
+contains the point. A grid of n &times; n &times; n cells then needs n<sup>3</sup> such tests. On a sphere, with 12
+threads, each test costs about 4 microseconds, so 10<sup>6</sup> cells take about 4 seconds, and the time grows very
+quickly with n.
+
+<h3>The idea: test whole rows of cells</h3>
+
+"Scanline" is a term from computer graphics: instead of handling a picture one point at a time, you handle it one line
+at a time. To fill a polygon on a screen, for example, you take one row of pixels, compute where this row crosses the
+edges of the polygon, and fill everything between the first and second crossing, between the third and fourth, and so
+on. No pixel needs its own inside/outside test.
+
+The plug-in does the same in 3D. A row of cells along X (fixed j and k) plays the role of the row of pixels, and the
+faces of the solid play the role of the polygon edges.
+
+Along a row, a cell center can only change from inside to outside (or the reverse) where the row's line crosses the
+surface of the solid. Between two crossings, all the points of the line are on the same side. So, for each row and each
+solid, the plug-in:
+- computes once where the line crosses the surface of the solid, which gives a short sorted list of crossing positions;
+- tests one point per <b>stretch</b> of line between two crossings, at the middle of the stretch, and only if a cell
+  needs it;
+- tests separately, one by one, the cells whose center is closer than one cell width to a crossing. Near a crossing,
+  the shortcut above is less reliable (the line may touch the surface, cross it on an edge, or pass very close to a
+  cell center), so these cells get the exact test.
+
+Every other cell simply takes the answer of its stretch. Finding the stretch of a cell is a quick search in the short
+list of crossings: no geometry is involved.
+
+\image html cartesiangrid_scanline.png "A horizontal cut through a sphere. On the highlighted row, the line along X crosses the surface twice. The cells whose center is less than one cell width from a crossing get the exact test (orange). The cells in between take the answer of a single test at the middle of their stretch (green dot). Cells outside the box around the solid are skipped without any test." width=640px
+
+Here is an example: a row through a sphere of radius 10, centered at the origin. The line starts a little before the
+box around the solid and ends a little after it. It crosses the surface of the sphere at x = -9.9 and x = +9.9, which
+cuts the line into three stretches:
+
+\code
+start ------- -9.9 ======================= +9.9 ------- end
+ stretch 0           stretch 1                stretch 2
+ middle ~ -10.4      middle = 0               middle ~ +10.4
+\endcode
+
+The line cannot go from inside to outside without crossing the surface, and every crossing is the end of a stretch. So
+all the points of a stretch are on the same side, and one test, at any point of the stretch, gives the answer for all
+the cells whose center is in it. The middle is chosen because it is the point farthest from both crossings: there, the
+test is least likely to fall right on the surface, where the answer is uncertain. In this example, 100 cells inside the
+sphere cost one test instead of 100.
+
+<h3>Why this is so much faster</h3>
+
+With n cells along each axis, the grid has n<sup>3</sup> cells but only n<sup>2</sup> rows. The expensive operations of
+the scanline method (one line crossing per row, a few tests per row, and the tests near the surface) grow like the
+number of rows, n<sup>2</sup>, instead of the number of cells, n<sup>3</sup>. When n doubles, the simple method becomes
+8 times slower, and the scanline method only 4 times slower.
+
+<table>
+<tr><th>Work, for n cells per axis and S solids</th><th>One test per cell</th><th>Scanline</th></tr>
+<tr><td>Line crossings</td><td>none</td><td>at most n<sup>2</sup> &times; S (one per row and per solid)</td></tr>
+<tr><td>Tests near the surface</td><td>-</td><td>about as many as cells cut by the surface, which grows like
+n<sup>2</sup></td></tr>
+<tr><td>Tests at the middle of stretches</td><td>-</td><td>a few per row and per solid: grows like n<sup>2</sup>
+&times; S</td></tr>
+<tr><td>Total number of point tests</td><td>up to n<sup>3</sup> &times; S</td><td>grows like n<sup>2</sup> &times;
+S</td></tr>
+<tr><td>Simple bookkeeping per cell</td><td>n<sup>3</sup></td><td>n<sup>3</sup> quick searches, a few nanoseconds
+each</td></tr>
+</table>
+
+Only the simple bookkeeping still grows like n<sup>3</sup>, and it involves no geometry, so it remains negligible in the
+measurements below, up to 8 million cells.
+
+<h3>The result is exactly the same as with one test per cell</h3>
+
+The shortcut is only used where it is safe. Everything else falls back to the exact test:
+- The cells close to a crossing (less than one cell width away) always get the exact test.
+- If the test at the middle of a stretch lands on the surface or gives no clear answer, all the cells of that stretch
+  get the exact test.
+- If the line crossing computation fails for a row, the whole row gets one exact test per cell.
+- A line passing through an edge between two faces finds the same crossing twice, once per face. Crossings closer than
+  a thousandth of the smallest cell size are merged into one, so that a stretch is not wrongly split in two.
+- The "smallest solid wins" rule is kept: the solids are handled from the smallest to the largest, and a cell that
+  already has an owner is skipped. A row stops early once all its cells have an owner, which saves time with nested
+  volumes.
+- Rows that do not cross the box around a solid skip that solid completely. Within a row, only the cells inside the box
+  are visited.
+- When a test cannot decide, it is tried again at a point moved very slightly inside the same cell. If it still cannot
+  decide, the cell is considered outside that solid, and a warning gives the number of such cells.
+
+The plug-in's tests compare the two methods on 8 shapes and 3 grids, and require exactly the same owner for every
+cell. The grids include ones with different numbers of cells per axis (17 &times; 19 &times; 23, 31 &times; 8 &times;
+13). The shapes are a sphere, a torus, a tilted cylinder, a cone (with its tip), a box with a hole, a rotated box, a
+compound of nested and overlapping solids, and two boxes touching on a face whose faces lie exactly on cell centers.
+
+<h3>Using all the processor cores</h3>
+
+The grid is split into layers along Z, and the layers are handed out to one worker thread per processor core: when a
+thread finishes a layer, it takes the next free one. The OpenCASCADE objects that do the tests cannot be shared between
+threads, so each thread creates its own, once per solid, the first time it needs them. If a thread hits an error, the
+others stop, and the compute reports that error.
+
+<h2>Measurements</h2>
+
+These timings cover only the step that finds the owner of each cell, with 12 threads, on a grid of n &times; n &times; n
+cells covering the bounding box, with an optimized (Release) build. Two test shapes: a sphere of radius 10, and a box
+containing a sphere and a torus (three nested and overlapping solids).
+
+\image html cartesiangrid_bench.png "Time to find the owner of every cell, on logarithmic scales. On such a plot, the slope of a line is the power of n: one test per cell (EXACT) has slope 3 (time grows like n cubed), the scanline method slope 2 (like n squared). The simple method was not run for n = 200; it would take about 30 s." width=640px
+
+<table>
+<tr><th>Shape</th><th>n</th><th>Cells</th><th>One test per cell (s)</th><th>Scanline (s)</th><th>Times faster</th></tr>
+<tr><td>sphere</td><td>25</td><td>15 625</td><td>0.069</td><td>0.016</td><td>4.4</td></tr>
+<tr><td>sphere</td><td>50</td><td>125 000</td><td>0.508</td><td>0.060</td><td>8.5</td></tr>
+<tr><td>sphere</td><td>100</td><td>1 000 000</td><td>3.99</td><td>0.240</td><td>16.6</td></tr>
+<tr><td>sphere</td><td>150</td><td>3 375 000</td><td>13.55</td><td>0.547</td><td>24.8</td></tr>
+<tr><td>sphere</td><td>200</td><td>8 000 000</td><td>not run</td><td>0.975</td><td>-</td></tr>
+<tr><td>box + sphere + torus</td><td>25</td><td>15 625</td><td>0.083</td><td>0.019</td><td>4.4</td></tr>
+<tr><td>box + sphere + torus</td><td>50</td><td>125 000</td><td>0.630</td><td>0.063</td><td>10.0</td></tr>
+<tr><td>box + sphere + torus</td><td>100</td><td>1 000 000</td><td>5.10</td><td>0.260</td><td>19.6</td></tr>
+<tr><td>box + sphere + torus</td><td>150</td><td>3 375 000</td><td>16.87</td><td>0.573</td><td>29.4</td></tr>
+<tr><td>box + sphere + torus</td><td>200</td><td>8 000 000</td><td>not run</td><td>1.046</td><td>-</td></tr>
+</table>
+
+The gain grows with the size of the grid: it roughly doubles each time n doubles, as expected from n<sup>3</sup>
+divided by n<sup>2</sup>.
+
+For a full compute with <code>mesh.Compute()</code> (12 threads, creation of the nodes and hexahedra included):
+
+<table>
+<tr><th>Case</th><th>One test per cell</th><th>Scanline</th></tr>
+<tr><td>box, 10<sup>6</sup> cells</td><td>6.5 s</td><td>1.56 s</td></tr>
+<tr><td>sphere, 150 &times; 150 &times; 150 cells</td><td>13.8 s</td><td>2.95 s</td></tr>
+</table>
+
+Finding the owners now takes only about 20 % of a compute. The remaining 80 % is spent creating the SMESH nodes and
+hexahedra: one element per cell, on a single thread, because the SMESH data structure cannot be filled by several
+threads at once. This is also why the \ref cartesiangridplugin_export_page "Cartesian MED export", which creates no
+SMESH element, is much faster than a compute on large grids.
+
+*/

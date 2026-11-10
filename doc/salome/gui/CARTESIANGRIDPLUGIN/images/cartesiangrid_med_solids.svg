@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 280">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#000"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="10" y="10" width="740" height="260" fill="#fff" stroke="#000" stroke-width="1.4"/>
+<text xml:space="preserve" x="20" y="32" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" text-anchor="start" fill="#000">grid.med, zones from the solids  (GDML world with a body placed twice)</text>
+<rect x="20" y="44" width="720" height="56" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="20" y="44" width="720" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="28" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cell family numbers</text>
+<text xml:space="preserve" x="732" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">one value per cell, as before</text>
+<text xml:space="preserve" x="30" y="90" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="12" font-weight="normal" text-anchor="start" fill="#000">FAM = [-3, -3, -1, -1, -2, -2, -3, …, -4, -4, -3, …]</text>
+<rect x="20" y="112" width="720" height="148" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="20" y="112" width="720" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="28" y="129" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Family table</text>
+<text xml:space="preserve" x="36" y="155" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">number in FAM</text>
+<text xml:space="preserve" x="146" y="155" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">group (zone) name</text>
+<text xml:space="preserve" x="446" y="155" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">where the name comes from</text>
+<line x1="30" y1="162" x2="730" y2="162" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="36" y="181" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">0</text>
+<text xml:space="preserve" x="146" y="181" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">no group</text>
+<text xml:space="preserve" x="446" y="181" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">cells outside all solids</text>
+<line x1="30" y1="188" x2="730" y2="188" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="36" y="203" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-1, -2</text>
+<text xml:space="preserve" x="146" y="203" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">GDML_PhysicalVolume_1_1_72, …_269</text>
+<text xml:space="preserve" x="446" y="203" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">same name in two copies: _&lt;id&gt; added</text>
+<line x1="30" y1="210" x2="730" y2="210" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="36" y="225" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-3</text>
+<text xml:space="preserve" x="146" y="225" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">GDML_WorldVolume_1_1_1</text>
+<text xml:space="preserve" x="446" y="225" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">SHAPER sub-result (GDML volume)</text>
+<line x1="30" y1="232" x2="730" y2="232" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="36" y="247" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-4</text>
+<text xml:space="preserve" x="146" y="247" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">SOLID_36</text>
+<text xml:space="preserve" x="446" y="247" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">solid without a name</text>
+<line x1="30" y1="254" x2="730" y2="254" stroke="#bbb" stroke-width="0.8"/>
+<line x1="140" y1="140" x2="140" y2="257" stroke="#bbb" stroke-width="0.8"/>
+<line x1="440" y1="140" x2="440" y2="257" stroke="#bbb" stroke-width="0.8"/>
+</svg>

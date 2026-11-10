@@ -1,0 +1,152 @@
+/*!
+
+\page cartesiangridplugin_python_interface_page Python interface
+
+Everything the dialogs do can also be done from a Python script. The plug-in's Python code is in the module
+<code>salome.CartesianGridPlugin.CartesianGridPluginBuilder</code>. This page explains the main functions; the complete
+list, generated from the code, is in the
+<a href="cartesiangridpluginpy_doc/namespaceCartesianGridPluginBuilder.html">CartesianGridPluginBuilder</a> reference
+pages. A complete example script is given at the end of this page.
+
+<h2>Creating the mesh and the grid</h2>
+
+As with the other SMESH algorithms, you first create a mesh on a shape, then assign the algorithm to it:
+
+\code
+from salome.smesh import smeshBuilder
+smesh = smeshBuilder.New()
+
+mesh = smesh.Mesh(shape, "Mesh_1")   # shape: the whole geometry (the main shape)
+algo = mesh.CartesianGrid()          # assigns the Cartesian Grid 3D algorithm
+hyp = algo.Grid(nbCells=[40, 40, 20])   # creates the Cartesian Grid Parameters hypothesis
+mesh.Evaluate()                      # optional: number of nodes and hexahedra, without computing
+mesh.Compute()                       # builds the hexahedra
+\endcode
+
+<code>mesh.CartesianGrid()</code> returns the algorithm object (of class
+CartesianGridPluginBuilder.CartesianGrid_3D_Algorithm). It must be called without a geometry argument, because the
+algorithm must be assigned to the main shape.
+
+<code>algo.Grid(...)</code> creates the hypothesis the first time it is called, and returns the same hypothesis on later
+calls. Its arguments are all optional:
+- <code>nbCells</code>: the number of cells along each axis (mode Nb cells);
+- <code>step</code>: the cell size along each axis (mode Step);
+- <code>coordinates</code>: the positions of the grid lines along each axis (mode Coordinates);
+- <code>spacing</code>: a spacing function along each axis (mode Spacing). A value is either a function of t, as a
+  string, or a pair (list of functions, list of internal points), as in Body Fitting;
+- <code>keepOutsideCells</code>: <code>True</code> to keep the cells outside all solids.
+
+<code>nbCells</code>, <code>step</code> and <code>spacing</code> accept either one value, used for the three axes, or a
+list of three values for X, Y and Z. <code>coordinates</code> always takes a list of three. In a list, <code>None</code>
+leaves that axis unchanged. Some examples:
+
+\code
+algo.Grid(nbCells=[40, 40, 20])                           # 40 x 40 x 20 cells
+algo.Grid(step=2.5, keepOutsideCells=True)                # cells of size 2.5, keep the outside cells
+algo.Grid(coordinates=[[0, 2, 5, 10], None, None])        # grid lines along X only
+algo.Grid(spacing=[None, None, (["0.5", "2"], [0.5])])    # along Z: size 0.5, then 2 from the middle
+\endcode
+
+\warning Do not call <code>mesh.CartesianGrid()</code> a second time to change the grid: it creates a new algorithm
+object with a new hypothesis, and that hypothesis is not used by the mesh. Keep the <code>hyp</code> object returned by
+the first call, and change the grid with its methods below.
+
+<h2>Methods of the hypothesis</h2>
+
+In all these methods, <code>axis</code> is 0 for X, 1 for Y and 2 for Z.
+
+<table>
+<tr><th>Method</th><th>What it does</th></tr>
+<tr><td><code>SetNbCells(axis, nb)</code></td><td>mode Nb cells, with nb cells (at least 1)</td></tr>
+<tr><td><code>SetStep(axis, step)</code></td><td>mode Step, with a cell size of about step (positive); the size is
+adjusted so that the cells fill the extent exactly</td></tr>
+<tr><td><code>SetCoordinates(axis, coords)</code></td><td>mode Coordinates: the positions of the grid lines, at least 2
+different values</td></tr>
+<tr><td><code>SetSpacing(axis, functions, internalPoints)</code></td><td>mode Spacing: one function of t per range;
+the internal points, between 0 and 1, separate the ranges, so there is one point fewer than functions</td></tr>
+<tr><td><code>GetMode(axis)</code></td><td>the mode of the axis: 0 Nb cells, 1 Step, 2 Coordinates, 3 Spacing</td></tr>
+<tr><td><code>GetNbCells</code>, <code>GetStep</code>, <code>GetCoordinates</code>, <code>GetSpacing</code></td><td>read
+back the values of each mode</td></tr>
+<tr><td><code>SetKeepOutsideCells(keep)</code>, <code>GetKeepOutsideCells()</code></td><td>keep (<code>True</code>) or
+remove (<code>False</code>) the cells outside all solids</td></tr>
+</table>
+
+For example, <code>hyp.SetStep(2, 5.0)</code> sets cells of about 5 along Z.
+
+When a value is not valid, the method raises a <code>SALOME.SALOME_Exception</code> with one of these messages:
+- "Axis must be 0 (X), 1 (Y) or 2 (Z)"
+- "Number of cells must be at least 1"
+- "Step must be positive"
+- "At least 2 coordinates are needed", "Coordinates must be finite numbers", "Duplicate coordinates"
+- "At least one spacing function is needed", "Number of internal points must be the number of functions minus one",
+  "Internal points must be inside ]0, 1[", "Invalid spacing function"
+
+After a compute, <code>mesh.GetComputeErrors()</code> lists the errors and warnings. Some examples:
+- "Keep outside cells requires a compound main shape"
+- "Solid #n is not closed"
+- "More than 2147483646 cells along X: the step is too small"
+- "Grid of a x b x c cells is too large to be stored"
+- "n solid(s) own no cell, refine the grid"
+
+The export raises the same messages, as a <code>SALOME.SALOME_Exception</code>.
+
+<h2>Writing the Cartesian MED file</h2>
+
+\code
+summary = algo.ExportCartesianMED("grid.med", source="geometry", zonePrefix="MAT_")
+print(summary)
+\endcode
+
+This writes the \ref cartesiangridplugin_export_page "Cartesian MED file" and returns a summary as English text: the
+size of the grid, the number of cells in each zone, the cells in no zone, the solids in no zone group, and the warnings.
+The mesh does not need to be computed first.
+- <code>source="geometry"</code> (the default): each geometry group of the main shape whose name starts with
+  <code>zonePrefix</code> becomes a zone.
+- <code>source="solids"</code>: each solid becomes a zone, named as explained in
+  \ref cartesiangridplugin_export_solids "One zone per solid". <code>zonePrefix</code> is then ignored.
+
+It raises <code>ValueError</code> if <code>source</code> is neither of these, or if the mesh does not use the Cartesian
+Grid 3D algorithm. It raises <code>SALOME.SALOME_Exception</code> if the hypothesis is missing, if the grid is too
+large, if a solid is in two zone groups, or if the file cannot be written.
+
+<h2>Other functions of the module</h2>
+
+These functions are called on the module, for example
+<code>CartesianGridPluginBuilder.SolidNames(mesh)</code>. Unless stated otherwise, <code>mesh</code> can be a
+<code>smeshBuilder.Mesh</code> (the object returned by <code>smesh.Mesh</code>) or a CORBA <code>SMESH.SMESH_Mesh</code>.
+
+<table>
+<tr><th>Function</th><th>What it returns or does</th></tr>
+<tr><td><code>ExportCartesianMED(mesh, fileName, source="geometry", zonePrefix="MAT_")</code></td>
+<td>The same export as <code>algo.ExportCartesianMED</code>, starting from the mesh.</td></tr>
+<tr><td><code>ExportCartesianMEDMessages(mesh, fileName, source, zonePrefix)</code></td>
+<td>The same export, but returns the summary as a list of messages <code>(key, args)</code> instead of text. The wizard
+uses it to translate the summary.</td></tr>
+<tr><td><code>ReportText(messages)</code>, <code>REPORT_FORMATS</code></td>
+<td><code>ReportText</code> turns a list of messages into English text. <code>REPORT_FORMATS</code> gives, for each
+message key, its level ("info", "note" or "warning") and its English text.</td></tr>
+<tr><td><code>SolidNames(mesh)</code></td>
+<td>The list of <code>(zone name, solid number)</code> used for one zone per solid, in the order of the export.</td></tr>
+<tr><td><code>CartesianGridMeshesOn(shape)</code></td>
+<td>The list of <code>(name, mesh)</code> of the meshes of the study built on this shape (GEOM or SHAPER) with the
+Cartesian Grid 3D algorithm.</td></tr>
+<tr><td><code>CartesianGridAlgorithm(mesh)</code></td>
+<td>The Cartesian Grid 3D algorithm of the mesh (as a CORBA object); <code>ValueError</code> if there is none.</td></tr>
+<tr><td><code>CartesianGridParametersOf(mesh)</code></td>
+<td>The Cartesian Grid Parameters hypothesis of the mesh, or <code>None</code>.</td></tr>
+<tr><td><code>CreateGroupsOnGeometry(mesh)</code></td>
+<td>Only for a <code>smeshBuilder.Mesh</code>. Creates one group of volumes per geometry group of the main shape. A
+group is skipped if its name is already used by a mesh group; a group that stays empty (a group of faces or edges) is
+removed. Returns the list of created names and the list of <code>(skipped name, reason)</code>.</td></tr>
+<tr><td><code>X</code>, <code>Y</code>, <code>Z</code></td><td>The axis numbers 0, 1 and 2.</td></tr>
+</table>
+
+\anchor example_CartesianGridPlugin
+<h2>Complete example: a block holding a sphere, one zone per material</h2>
+
+This script builds a block of steel with a lead sphere inside it, creates one group per material, computes the mesh,
+creates the mesh groups, and writes the Cartesian MED file.
+
+\tui_script{cartesiangrid_demo.py}
+
+*/

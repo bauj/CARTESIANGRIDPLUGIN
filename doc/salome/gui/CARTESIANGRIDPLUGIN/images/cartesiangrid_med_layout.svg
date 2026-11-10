@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#000"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="10" y="10" width="740" height="500" fill="#fff" stroke="#000" stroke-width="1.4"/>
+<text xml:space="preserve" x="20" y="32" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" text-anchor="start" fill="#000">grid.med  (an HDF5 file in MED format)</text>
+<rect x="20" y="44" width="720" height="456" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="20" y="44" width="720" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="28" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cartesian mesh "Mesh_1"</text>
+<text xml:space="preserve" x="732" y="61" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">MED_STRUCTURED_MESH, MED_CARTESIAN_GRID, dimension 3</text>
+<rect x="32" y="80" width="330" height="128" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="80" width="330" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="97" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Node coordinates per axis</text>
+<text xml:space="preserve" x="42" y="128" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">X: [x0, x1, …, xnx]   nx+1 doubles</text>
+<text xml:space="preserve" x="42" y="148" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">Y: [y0, y1, …, yny]   ny+1 doubles</text>
+<text xml:space="preserve" x="42" y="168" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">Z: [z0, z1, …, znz]   nz+1 doubles</text>
+<text xml:space="preserve" x="42" y="196" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#333">any spacing; nodes and cells are implicit</text>
+<rect x="374" y="80" width="354" height="128" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="374" y="80" width="354" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="382" y="97" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cell numbering, i fastest</text>
+<rect x="386" y="114" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="403" y="131" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">0</text>
+<rect x="420" y="114" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="437" y="131" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">1</text>
+<rect x="454" y="114" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="471" y="131" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">2</text>
+<rect x="488" y="114" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="505" y="131" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">3</text>
+<rect x="386" y="140" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="403" y="157" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">4</text>
+<rect x="420" y="140" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="437" y="157" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">5</text>
+<rect x="454" y="140" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="471" y="157" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">6</text>
+<rect x="488" y="140" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="505" y="157" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">7</text>
+<rect x="386" y="166" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="403" y="183" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">8</text>
+<rect x="420" y="166" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="437" y="183" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">9</text>
+<rect x="454" y="166" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="471" y="183" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">10</text>
+<rect x="488" y="166" width="34" height="26" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<text xml:space="preserve" x="505" y="183" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="middle" fill="#000">11</text>
+<text xml:space="preserve" x="536" y="128" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#000">nx = 4, ny = 3, slice k = 0</text>
+<text xml:space="preserve" x="536" y="148" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">c = i + nx·(j + ny·k)</text>
+<text xml:space="preserve" x="536" y="168" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#333">slice k = 1 starts at 12</text>
+<text xml:space="preserve" x="536" y="186" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#333">(rows j = 0, 1, 2 from the top)</text>
+<rect x="32" y="220" width="696" height="82" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="220" width="696" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="237" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Cell family numbers  (MED_CELL, MED_HEXA8)</text>
+<text xml:space="preserve" x="720" y="237" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">nx·ny·nz integers (med_int), in cell order</text>
+<text xml:space="preserve" x="42" y="266" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="12" font-weight="normal" text-anchor="start" fill="#000">FAM = [-1, -1, -1, -2, -2, -3, -3, -2, -1, …, 0, 0, -1, …]</text>
+<text xml:space="preserve" x="42" y="288" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="start" fill="#333">cell 0, 1, 2, …      0 = no zone (outside the solids; with groups, also a solid in no MAT_ group)</text>
+<rect x="32" y="314" width="696" height="176" fill="#fff" stroke="#000" stroke-width="1"/>
+<rect x="32" y="314" width="696" height="24" fill="#ececec" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="40" y="331" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="bold" text-anchor="start" fill="#000">Family table</text>
+<text xml:space="preserve" x="720" y="331" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11" font-weight="normal" text-anchor="end" fill="#333">one row per family: its number, its name, the group it holds</text>
+<text xml:space="preserve" x="48" y="359" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">number in FAM</text>
+<text xml:space="preserve" x="158" y="359" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">family name</text>
+<text xml:space="preserve" x="308" y="359" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">group it holds</text>
+<text xml:space="preserve" x="438" y="359" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">meaning</text>
+<line x1="42" y1="366" x2="718" y2="366" stroke="#000" stroke-width="1"/>
+<text xml:space="preserve" x="48" y="385" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">0</text>
+<text xml:space="preserve" x="158" y="385" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">FAMILLE_ZERO</text>
+<text xml:space="preserve" x="308" y="385" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">none</text>
+<text xml:space="preserve" x="438" y="385" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">no zone (outside, or solid in no MAT_ group)</text>
+<line x1="42" y1="392" x2="718" y2="392" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="48" y="407" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-1</text>
+<text xml:space="preserve" x="158" y="407" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">FAM_MAT_AIR</text>
+<text xml:space="preserve" x="308" y="407" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">MAT_AIR</text>
+<text xml:space="preserve" x="438" y="407" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">material AIR</text>
+<line x1="42" y1="414" x2="718" y2="414" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="48" y="429" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-2</text>
+<text xml:space="preserve" x="158" y="429" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">FAM_MAT_IRON</text>
+<text xml:space="preserve" x="308" y="429" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">MAT_IRON</text>
+<text xml:space="preserve" x="438" y="429" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">material IRON</text>
+<line x1="42" y1="436" x2="718" y2="436" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="48" y="451" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">-3</text>
+<text xml:space="preserve" x="158" y="451" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">FAM_MAT_LEAD</text>
+<text xml:space="preserve" x="308" y="451" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">MAT_LEAD</text>
+<text xml:space="preserve" x="438" y="451" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="normal" text-anchor="start" fill="#000">material LEAD</text>
+<line x1="42" y1="458" x2="718" y2="458" stroke="#bbb" stroke-width="0.8"/>
+<line x1="152" y1="344" x2="152" y2="461" stroke="#bbb" stroke-width="0.8"/>
+<line x1="302" y1="344" x2="302" y2="461" stroke="#bbb" stroke-width="0.8"/>
+<line x1="432" y1="344" x2="432" y2="461" stroke="#bbb" stroke-width="0.8"/>
+<text xml:space="preserve" x="42" y="482" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#000">Reading cell 3:  FAM[3] = −2,  row −2,  group MAT_IRON:  cell 3 is iron.</text>
+</svg>

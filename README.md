@@ -141,7 +141,8 @@ coming from the mesher engine stay in English, as in the other SMESH plugins.
 | `idl/CartesianGridPlugin_Algorithm.idl` | CORBA interfaces |
 | `resources/CartesianGridPlugin.xml` | meshers declaration for SMESH |
 | `tests` | C++ core tests and Python smesh tests, `data/four_materials.gdml` |
-| `doc/index.html` | user page |
+| `doc/salome/gui/CARTESIANGRIDPLUGIN` | user's guide (Doxygen): pages in `input/*.doc`, wizard screenshot, Python reference generated from `CartesianGridPluginBuilder.py` |
+| `doc/salome/examples` | example of the user's guide, also run as a test |
 
 ## Build
 
@@ -153,9 +154,15 @@ By hand, from the application directory:
 ```bash
 source env_build.sh
 cmake -S SOURCES/CARTESIANGRIDPLUGIN -B BUILD/CARTESIANGRIDPLUGIN -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=$PWD/INSTALL/CARTESIANGRIDPLUGIN -DSALOME_BUILD_DOC=OFF
+      -DCMAKE_INSTALL_PREFIX=$PWD/INSTALL/CARTESIANGRIDPLUGIN
 make -C BUILD/CARTESIANGRIDPLUGIN -j12 install
 ```
+
+The user's guide is built at install time, as in the other SMESH plugins (`SALOME_BUILD_DOC=ON` by default).
+It needs Doxygen (Graphviz `dot` for the class graphs) and an SMESH built with its documentation. It is installed in
+`share/doc/salome/gui/CARTESIANGRIDPLUGIN` and appears in SALOME under *Help > User's Guide > Mesh module >
+Plug-ins > Cartesian Grid plugin*; the *Help* buttons of the hypothesis dialog and of the wizard open its pages.
+`-DSALOME_BUILD_DOC=OFF` skips it; the *Help* buttons then have no page to show.
 
 ## Tests
 
@@ -164,7 +171,7 @@ make -C BUILD/CARTESIANGRIDPLUGIN -j12 install
 source env_build.sh
 ctest --test-dir BUILD/CARTESIANGRIDPLUGIN -R "Test(Classifier|Hypothesis|GridText|CartesianMED)"
 
-# Python tests (installed, SALOME environment)
+# Python tests and the example of the user's guide (installed, SALOME environment)
 source env_launch.sh
 cd INSTALL/CARTESIANGRIDPLUGIN/bin/salome/test && ctest
 ```

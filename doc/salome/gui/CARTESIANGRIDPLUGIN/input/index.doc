@@ -1,0 +1,121 @@
+/*!
+
+\mainpage Introduction to CARTESIANGRIDPLUGIN
+
+\b CARTESIANGRIDPLUGIN is a plug-in for the SALOME Mesh module (SMESH). It fills a geometry with a regular 3D grid of
+boxes, aligned with the X, Y and Z axes. Each box of the grid is called a <b>cell</b>, and each cell becomes a
+hexahedron (a mesh element with 8 corners) in the mesh.
+
+The plug-in is useful when a simulation code (a "solver") works on a Cartesian grid and needs to know which material
+fills each cell. Besides building an ordinary SMESH mesh, the plug-in can write the grid and the material of every cell
+to a compact MED file, without building the mesh at all.
+
+The plug-in adds two things to the Mesh module:
+- a 3D meshing algorithm called <b>Cartesian Grid 3D</b>;
+- its settings, a hypothesis called <b>Cartesian Grid Parameters</b>, which defines where the grid lines are.
+
+<h2>How a cell is given to a solid</h2>
+
+The geometry is made of one or more solids. The plug-in does not cut cells along the surfaces of the solids. Instead,
+it looks only at the <b>center</b> of each cell and asks: which solid contains this point?
+
+\image html cartesiangrid_what.png "(a) The geometry: one solid, seen here in a cut by a horizontal plane. (b) The grid placed over the solid. Only the center of each cell is tested (dots): a filled dot is inside the solid, an empty dot is outside. (c) The cells whose center is inside the solid become hexahedra of that solid." width=760px
+
+As picture (c) shows, the result follows the shape of the solid in steps, like a staircase: a curved surface becomes a
+set of small flat steps. No cell is cut into a smaller piece. The finer the grid, the smaller the steps.
+
+When the center of a cell is inside several solids at once, the cell goes to the <b>smallest</b> of these solids (the
+one with the smallest volume). A center lying exactly on the surface of a solid counts as inside it. If two solids have
+exactly the same volume, the one that comes first in the geometry wins.
+
+A cell whose center is in no solid at all is removed from the mesh. You can choose to keep these cells instead (option
+\b Keep in the hypothesis); they are then attached to the whole geometry rather than to one solid.
+
+<h2>Why the smallest solid wins</h2>
+
+Many geometries are built by placing volumes inside other volumes, without cutting the inner volume out of the outer
+one. This way of describing a geometry is common in CSG modelling (constructive solid geometry).
+
+Here is an example. A large box of AIR contains a box of IRON, and the IRON box contains a disc of LEAD. The IRON box
+is not cut out of the AIR box: the AIR solid is still a complete box. In the same way, the IRON solid is still a
+complete box, even where the LEAD disc sits inside it. The three solids overlap. The modeller simply means "where an
+inner volume is placed, it replaces the volume around it". This is a convention for reading the geometry; the solids
+themselves do not show it.
+
+Most meshers cannot work with overlapping solids: they need solids that touch each other without overlapping. The Body
+Fitting algorithm of SMESH, for example, fails on such a geometry. To use these meshers, you would first have to cut
+the solids with boolean operations (Partition, Cut). These operations create new solids, so any group defined on the
+original solids (for example one group per material) would have to be rebuilt. Boolean operations also take time and
+can fail on complex CAD models.
+
+The "smallest solid wins" rule gives the right answer without any boolean operation. A point inside the LEAD disc is
+also inside the IRON box and inside the AIR box. Among these three solids, LEAD is the smallest, so the cell goes to
+LEAD. An inner volume is always smaller than the volume that contains it, so the innermost volume always wins.
+
+\image html cartesiangrid_cut.png "(a) Uncut geometry: three complete solids overlap. AIR (the largest) contains IRON, and IRON contains LEAD (the smallest). (b) The same materials after boolean cuts: three separate solids that only touch each other. (c) The cells are the same in both cases. In (a), a center inside the lead disc is inside all three solids and goes to LEAD, the smallest one. In (b), it is inside LEAD only." width=760px
+
+<h2>It also works on geometry that is already cut</h2>
+
+The rule does not require overlapping solids; it only decides what happens when solids overlap. If your geometry is
+already cut into separate solids (for example a Partition made in the Geometry module, or a CAD assembly whose parts
+share faces), each cell center is inside exactly one solid, and that solid gets the cell.
+
+There is one special case: a cell center lying exactly on a face shared by two solids. The center then counts as inside
+both solids, and the smaller solid gets the cell (or the first one in the geometry if both have the same volume). The
+answer is always the same for the same geometry, and no cell is lost or counted twice.
+
+So the same algorithm works on both kinds of geometry, and on a mix of the two: some volumes cut, others simply placed
+inside another one. The result depends only on which material is found at each cell center, not on how the CAD model
+was built.
+
+<b>A limit of the rule.</b> When two solids overlap only partly, without one being inside the other (for example two
+boxes that cross each other), the overlapping part goes to the smaller solid. This may not be what the modeller
+intended. CSG descriptions usually forbid this kind of overlap (GDML does, for example), so in practice it only
+happens with geometry built by hand. Overlapping solids are accepted everywhere in the plug-in; the only thing the
+Cartesian MED export refuses is a solid that belongs to two zone groups.
+
+<h2>From solids to materials</h2>
+
+To get one material per cell, create groups of solids in the geometry, one group per material. In SHAPER, when a GDML
+file is imported, the command <i>Create material groups</i> does this for you: it creates one group named
+<code>MAT_&lt;material&gt;</code> for each material, each group listing the solids made of that material.
+
+These groups are then used in two ways:
+- After a compute, check <b>Create all groups on geometry</b> in the <b>Create Mesh</b> dialog (or let the wizard do
+  it). SMESH then creates one mesh group per geometry group, holding the hexahedra of that group's solids.
+- The \ref cartesiangridplugin_export_page "Cartesian MED export" uses the groups directly: it writes the material of
+  every cell into the MED file, without creating any mesh element.
+
+<h2>Pages of this guide</h2>
+
+- \subpage cartesiangridplugin_hypo_page "Cartesian Grid Parameters hypothesis": how to place the grid lines along
+  each axis, and what to do with the cells outside the solids.
+- \subpage cartesiangridplugin_wizard_page "Cartesian Grid Wizard": a single dialog that goes from a geometry to the
+  Cartesian MED file.
+- \subpage cartesiangridplugin_export_page "Cartesian MED export": what the MED file contains, and how a solver can
+  read it.
+- \subpage cartesiangridplugin_algorithm_page "How the algorithm works": the steps of a compute, the fast cell
+  classification, and timings.
+- \subpage cartesiangridplugin_python_interface_page "Python interface": how to do all of this from a script.
+
+<h2>Limits</h2>
+
+- The algorithm must be assigned to the whole geometry (the main shape), so that it sees all the solids. Sub-meshes are
+  not supported.
+- Every solid must be closed (a real volume, with no hole in its surface). A solid smaller than a cell may get no cell
+  at all; you then get a warning.
+- The plug-in sets no limit on the number of cells; the memory of your computer does. A computed SMESH mesh needs about
+  760 bytes per hexahedron (nodes included), so 10<sup>8</sup> cells need about 76 GB. The Cartesian MED export alone
+  needs only about 16 bytes per cell. Along one axis, the grid may have at most 2<sup>31</sup>-2 cells. Before
+  computing, the \b Evaluate command of SMESH gives the exact number of nodes and hexahedra.
+- Most of the compute time is spent creating the SMESH nodes and hexahedra (about 80 %). This part runs on one
+  processor core only, because the SMESH data structure cannot be filled by several threads at once. Finding the solid
+  of each cell runs on all cores.
+- In rare cases, the geometry kernel cannot tell whether a cell center is inside a solid. The cell is then considered
+  outside that solid, and a warning gives the number of such cells.
+
+The dialogs, the wizard, its summary and its own error messages follow the language chosen in SALOME (English or
+French). As in the other SMESH plug-ins, the error messages that come from the meshing engine itself (compute errors,
+grid errors, export errors) are always in English.
+
+*/

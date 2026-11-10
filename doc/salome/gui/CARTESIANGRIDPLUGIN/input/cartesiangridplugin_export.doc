@@ -1,0 +1,262 @@
+/*!
+
+\page cartesiangridplugin_export_page Cartesian MED export
+
+The Cartesian MED export writes the grid and the zone of every cell to a MED file (the file format of SALOME meshes).
+A <b>zone</b> is what the solver needs to know about a cell: usually its material, or the solid it belongs to.
+
+The file is very compact. An ordinary mesh file stores every node and every element. Here, the grid is stored as a
+<b>Cartesian mesh</b>: only the positions of the grid lines along X, Y and Z, plus one number per cell that gives its
+zone. The nodes and cells are not stored, because a reader can rebuild them from the grid lines.
+
+You can run the export from the \ref cartesiangridplugin_wizard_page "Cartesian Grid Wizard", or from Python with
+<code>ExportCartesianMED</code>. At the end, a summary gives the number of cells in each zone.
+
+The export does not need the mesh to be computed: it finds the solid of each cell itself, from the geometry and the
+hypothesis. A mesh with only the algorithm and its hypothesis is enough, whichever way the zones are chosen.
+
+The file is first written under a temporary name, then renamed. So if writing fails, an existing file with the same
+name is not damaged.
+
+<h2>Two ways to choose the zones</h2>
+
+- <b>From geometry groups</b> (Python <code>source="geometry"</code>, the default). Each group of the geometry whose
+  name starts with the <i>zone prefix</i> becomes a zone. The prefix is <code>MAT_</code> by default; with an empty
+  prefix, every group becomes a zone. The groups are read from the study, so this works with GEOM and SHAPER
+  geometries.
+- <b>One zone per solid</b> (Python <code>source="solids"</code>). Each solid becomes a zone, named after the solid. No
+  group is needed, and the prefix is ignored. See \ref cartesiangridplugin_export_solids "below".
+
+<h2>From solids to zones, step by step</h2>
+
+The picture follows the export from geometry groups on the AIR, IRON and LEAD example of the introduction, seen in a
+horizontal cut.
+
+\image html cartesiangrid_export_steps.svg "The four steps of the export from geometry groups. All the work is done in simple tables of numbers (one number per cell): no SMESH node, hexahedron or group is created, so the mesh can stay empty." width=100%
+
+-# <b>Find the zone of each solid.</b> The zone groups are sorted by name and numbered 1, 2, 3, ... Each solid takes the
+   number of the group that lists it, or 0 if no group lists it. If a solid is listed in two zone groups, the export
+   stops with an error at this point, before the long part of the work. Note that the groups can be defined on uncut
+   solids: the group of IRON lists the complete IRON box, even though LEAD sits inside it.
+-# <b>Find the owner solid of each cell.</b> As for a compute, each cell goes to the smallest solid containing its
+   center (see \ref cartesiangridplugin_scanline "the scanline classifier"). Since it is the same rule as for a
+   compute, the zones in the file match the mesh that a compute would build.
+-# <b>Give each cell the zone of its owner solid.</b> A cell outside all solids gets zone 0.
+-# <b>Write the file.</b> In a MED file, cells are grouped with <b>families</b>: each cell carries a family number, and
+   each family carries the names of the groups it belongs to. The export gives zone z the family number -z, and names
+   that family <code>FAM_&lt;group&gt;</code>. The family holds one group, whose name is the zone name.
+
+<h2>What the file contains</h2>
+
+\image html cartesiangrid_med_layout.svg "Content of the file, here exported from MAT_ groups. To find the zone of a cell, read its number in the list of cell family numbers, then look for that number in the first column of the family table: the third column gives the group, which is the zone name." width=100%
+
+- The file holds one Cartesian mesh, named after the SMESH mesh. In MED terms it is a structured mesh of type
+  Cartesian grid (<code>MED_STRUCTURED_MESH</code>, <code>MED_CARTESIAN_GRID</code>), in 3 dimensions.
+- For each axis X, Y and Z, the file stores the list of grid line positions (the node coordinates along that axis).
+  There is no list of nodes or of hexahedra: the position of a cell is given by its indices (i, j, k) along the three
+  axes and these three lists.
+- The cells are numbered with i (along X) changing fastest, then j (along Y), then k (along Z). With nx, ny and nz cells
+  along X, Y and Z, the cell (i, j, k) has the number c = i + nx &times; (j + ny &times; k). For example, with nx = 4
+  and ny = 3, the cell (1, 2, 0) has the number 1 + 4 &times; 2 = 9.
+- For each cell, in this order, the file stores a family number (for the cell type <code>MED_HEXA8</code>). Family 0
+  means "no zone": the cell is outside all solids, or (when zones come from groups) its solid is in no zone group.
+- Each family stores the names of its groups, each name in a fixed field of 80 characters. A zone name can have at most
+  60 characters.
+- The file is written in version 3.3 of the MED format, so any MED library from version 3.3 on can read it.
+
+A program reading the file should always go from the family number to the family table, and then to the group name.
+It should not assume that "family -z is zone z", because a future version could put several groups in one family.
+
+If you look inside the file with the HDF5 tool <code>h5ls -r</code>, you see the following for a grid of
+100 &times; 100 &times; 100 cells and 4 materials. <code>&lt;step&gt;</code> stands for the time step; each group name
+is stored in an 80-character field:
+
+\code
+/ENS_MAA/Mesh_1/<step>/NOE/IN1          {101}      X coordinates (double)
+/ENS_MAA/Mesh_1/<step>/NOE/IN2          {101}      Y coordinates
+/ENS_MAA/Mesh_1/<step>/NOE/IN3          {101}      Z coordinates
+/ENS_MAA/Mesh_1/<step>/MAI/HE8/FAM      {1000000}  family of each cell
+/FAS/Mesh_1/FAMILLE_ZERO                           family 0
+/FAS/Mesh_1/ELEME/FAM_MAT_AIR/GRO/NOM   {1}        "MAT_AIR"  (family -1)
+/FAS/Mesh_1/ELEME/FAM_MAT_IRON/GRO/NOM  {1}        "MAT_IRON" (family -2)
+/FAS/Mesh_1/ELEME/FAM_MAT_LEAD/GRO/NOM  {1}        "MAT_LEAD" (family -3)
+/FAS/Mesh_1/ELEME/FAM_MAT_WOOD/GRO/NOM  {1}        "MAT_WOOD" (family -4)
+/INFOS_GENERALES                                   MED version
+\endcode
+
+The group names are padded with spaces up to 80 characters; this is why SMESH shows them with trailing spaces when it
+imports the file. The French names come from the MED format itself: ENS_MAA is the set of meshes, NOE the nodes, MAI the
+cells, HE8 the 8-node hexahedra, FAS the families and GRO the groups.
+
+<h2>The same file without any zone group</h2>
+
+If the geometry has no group whose name starts with the prefix, the export still writes a valid file, but it holds the
+grid only. The summary then starts with a warning. Since there is no zone to give, the export does not even look for
+the solid of each cell.
+
+\image html cartesiangrid_med_no_groups.svg "Without zone groups, every cell is in family 0, and the family table holds only family 0." width=100%
+
+Such a file cannot tell which cells are inside a solid, or which solid: all the cells are in family 0, inside and
+outside the solids alike. To get zones, either put the solids in geometry groups whose names start with the prefix, or
+export one zone per solid.
+
+\anchor cartesiangridplugin_export_solids
+<h2>One zone per solid</h2>
+
+With <code>source="solids"</code> (in the wizard: <b>Zones: Solids, one zone per solid</b>), each solid of the main
+shape becomes a zone, and no group is needed. The file has the same layout as before: family 0 for the cells outside
+all solids, then one family per solid, each holding one group named after the solid.
+
+\image html cartesiangrid_med_solids.svg "Family table of a GDML geometry in which one body is placed twice. The zones are sorted by name, so the family numbers follow the alphabetical order of the names, not the order of the solids." width=100%
+
+The name of a solid is looked for in this order:
+-# In GEOM: a solid published under the main shape in the study, for example after <b>Explode</b> into solids and
+   renaming the pieces.
+-# In SHAPER: the name of the solid in the SHAPER model, for example a volume name from a GDML file. SHAPER does not
+   publish these names in the study, so they can only be read in a SALOME session where SHAPER is loaded (in the GUI
+   and the wizard, or in a script that builds the SHAPER model).
+-# The name of the main shape, when it is made of a single solid.
+-# Otherwise <code>SOLID_&lt;id&gt;</code>, where id is the number of the solid in the shape (the same number as in the
+   "Solid #id" of compute messages).
+
+When several solids have the same name, the export adds <code>_&lt;id&gt;</code> to each of them so that every zone
+name is unique. This happens in GDML geometries when a volume containing other volumes is placed several times: each copy
+contains solids with the same names. Names longer than 60 characters (the MED limit) are cut. The summary starts by
+listing every name it had to change:
+
+\code
+Warning: zone name cut to 60 characters (MED limit): "<original>" -> "<zone name>"
+Warning: the SHAPER solid names cannot be read (...); unnamed solids get SOLID_<id>
+Note: 1 solid(s) without a name in the study or in SHAPER, named SOLID_<id>: SOLID_36
+Note: name "GDML_PhysicalVolume_1_1" used by 4 solids, zones GDML_PhysicalVolume_1_1_72, ...
+\endcode
+
+<b>Your solids are separate shapes?</b> A mesh is built on one shape only, so first gather the solids in a Compound (or
+a Partition). Never use a Fuse, which would merge them into a single solid. A geometry imported from GDML is already a
+single compound. In GEOM, the solids of a new compound have no name until you explode the compound and rename them. In
+SHAPER, they are named after the compound (Compound_1_1_1, ...) until you rename them.
+
+<h2>Size of the file</h2>
+
+For a grid of 100 &times; 100 &times; 100 cells and 4 materials:
+
+<table>
+<tr><th>Storage</th><th>Size</th><th>What takes the space</th></tr>
+<tr><td>Cartesian MED file (measured)</td><td>8.0 MB</td><td>8 000 000 bytes of family numbers (8 bytes per cell), 3 lists
+of 101 coordinates, and about 12 KB of names and other information</td></tr>
+<tr><td>The same grid as an ordinary (unstructured) MED mesh (estimated)</td><td>about 97 MB</td><td>1 030 301 nodes
+with 3 coordinates each (25 MB), 10<sup>6</sup> hexahedra with 8 node numbers each (64 MB), and the family numbers
+(8 MB)</td></tr>
+<tr><td>The same grid as a computed SMESH mesh in memory</td><td>about 760 MB</td><td>about 760 bytes per hexahedron
+(nodes, elements, and their links to the geometry)</td></tr>
+</table>
+
+If the solver only needs to know which zone each cell is in, the 8 bytes per cell of the family numbers are all the
+information it needs.
+
+While it runs, the export uses about 16 bytes of memory per cell. Some measured examples: 500 &times; 500 &times; 500
+cells take 7.3 s and 2.1 GB of memory; 800 &times; 800 &times; 800 cells (5.12&middot;10<sup>8</sup> cells) take 23 s
+and 8.2 GB, for a file of 4.1 GB. The time depends only on the number of cells: spacing functions cost nothing extra,
+and one zone per solid is as fast as zone groups.
+
+<h2>Opening the file</h2>
+
+SMESH (<b>File > Import > MED</b>), ParaVis and ParaView can open the file. In ParaView, the MEDReader plug-in reads
+MED files; it comes with the Kitware binaries, and you load it with <b>Tools > Manage Plugins</b>.
+
+<h2>Reading the file in a solver</h2>
+
+<h3>With the MED C library</h3>
+
+These are the calls needed, in order. The lines starting with "for" are loops written in plain words.
+
+\code
+fid = MEDfileOpen(file, MED_ACC_RDONLY);
+MEDnMesh(fid);                         // >= 1, the export writes one mesh
+MEDmeshnAxis(fid, 1);
+MEDmeshInfo(fid, 1, meshName, &spaceDim, &meshDim, &meshType, ...);   // MED_STRUCTURED_MESH, dim 3
+MEDmeshGridTypeRd(fid, meshName, &gridType);                          // MED_CARTESIAN_GRID
+for axis a = 1..3:
+  n = MEDmeshnEntity(fid, meshName, MED_NO_DT, MED_NO_IT, MED_NODE, MED_NONE,
+                     MED_COORDINATE_AXISa, MED_NO_CMODE, ...);
+  MEDmeshGridIndexCoordinateRd(fid, meshName, MED_NO_DT, MED_NO_IT, a, coords[a-1]);
+nFam = MEDmeshnEntity(..., MED_CELL, MED_HEXA8, MED_FAMILY_NUMBER, ...);   // 0: no family array
+MEDmeshEntityFamilyNumberRd(fid, meshName, MED_NO_DT, MED_NO_IT, MED_CELL, MED_HEXA8, familyOfCell);
+for f = 1..MEDnFamily(fid, meshName):
+  nGroups = MEDnFamilyGroup(fid, meshName, f);
+  MEDfamilyInfo(fid, meshName, f, familyName, &familyNumber, groupNames);   // nGroups x 80 chars
+MEDfileClose(fid);
+\endcode
+
+Things to know when writing a reader:
+- If the file has no list of family numbers, every cell is in family 0.
+- Group names come back padded to 80 characters, with spaces (files written by the export) or with
+  <code>'\0'</code> characters (files written by SMESH). Remove both before comparing names.
+- <code>med_int</code> is the integer type of the MED library. Its size is chosen when MED is built; in a usual SALOME
+  build it is <code>long</code>. Family numbers are negative for zones (-1, -2, ...) and 0 for "no zone".
+
+<h3>In Fortran</h3>
+
+The MED library also has a Fortran interface: the library <code>libmed</code> (which calls the C library
+<code>libmedC</code>) and the include file <code>med.hf90</code>, which defines the constants. Each C function has a
+Fortran subroutine with a six-letter name, whose last argument is an error code (0 means success). Names are Fortran
+strings padded with blanks, and the group names come back as one long string made of 80-character fields, as in C.
+Indices start at 1, and the default <code>INTEGER</code> kind used for MED integers must have the same size as
+<code>med_int</code>.
+
+<table>
+<tr><th>C function</th><th>Fortran subroutine</th></tr>
+<tr><td><code>MEDfileOpen</code> / <code>MEDfileClose</code></td><td><code>mfiope</code> / <code>mficlo</code></td></tr>
+<tr><td><code>MEDnMesh</code>, <code>MEDmeshnAxis</code></td><td><code>mmhnmh</code>, <code>mmhnax</code></td></tr>
+<tr><td><code>MEDmeshInfo</code></td><td><code>mmhmii</code> (by index) or <code>mmhmin</code> (by name)</td></tr>
+<tr><td><code>MEDmeshGridTypeRd</code></td><td><code>mmhgtr</code></td></tr>
+<tr><td><code>MEDmeshnEntity</code></td><td><code>mmhnme</code></td></tr>
+<tr><td><code>MEDmeshGridIndexCoordinateRd</code></td><td><code>mmhgcr</code></td></tr>
+<tr><td><code>MEDmeshEntityFamilyNumberRd</code></td><td><code>mmhfnr</code></td></tr>
+<tr><td><code>MEDnFamily</code> / <code>MEDnFamilyGroup</code> / <code>MEDfamilyInfo</code></td><td><code>mfanfa</code> / <code>mfanfg</code> / <code>mfafai</code></td></tr>
+</table>
+
+<h3>Finding the cell that contains a point</h3>
+
+Along one axis, the grid lines are at sorted positions c[0] < c[1] < ... < c[n], and cell number i lies between c[i]
+and c[i+1]. To find the cell that contains a coordinate x, search for x in this sorted list (a binary search). This works
+for any grid, with equal or unequal cells:
+
+\code
+int Locate(const std::vector<double>& c, double x)   // cell index along one axis, -1 if outside
+{
+  if (x < c.front() || x > c.back())
+    return -1;
+  const int i = (int)(std::upper_bound(c.begin(), c.end(), x) - c.begin()) - 1;
+  return std::min(i, (int)c.size() - 2);             // x on the last line: last cell
+}
+\endcode
+
+How it works:
+- <code>std::upper_bound</code> finds the first grid line that is strictly greater than x. The grid line just before it
+  is the lower side of the cell, so its index is the cell index. A binary search needs about 10 comparisons for 1000
+  grid lines.
+- On a grid with equal cells of size h, you could also compute floor((x - c[0]) / h). But rounding errors can then put a
+  point lying near a grid line in the wrong cell, so the search is safer.
+- A point lying exactly on an inner grid line goes to the cell above it (the cell that starts at that line). A point on
+  the last grid line goes to the last cell. Note that MEDCoupling's <code>getCellContainingPoint</code> makes the
+  opposite choice on inner lines: it picks the cell below.
+
+Example with grid lines at c = {0, 1, 3, 6}, that is 3 cells of widths 1, 2 and 3:
+
+<table>
+<tr><th>x</th><th>Locate</th><th>Why</th></tr>
+<tr><td>-0.1</td><td>-1</td><td>before the first grid line</td></tr>
+<tr><td>0</td><td>0</td><td>on the first grid line: cell 0</td></tr>
+<tr><td>0.5</td><td>0</td><td>between 0 and 1</td></tr>
+<tr><td>1</td><td>1</td><td>on an inner grid line: the cell above</td></tr>
+<tr><td>2</td><td>1</td><td>between 1 and 3</td></tr>
+<tr><td>6</td><td>2</td><td>on the last grid line: the last cell</td></tr>
+<tr><td>6.1</td><td>-1</td><td>after the last grid line</td></tr>
+</table>
+
+To get the zone at a point (x, y, z): find i, j and k with <code>Locate</code> on the three axes, compute the cell number
+c = i + nx &times; (j + ny &times; k), read the family number of cell c, and look up the group of that family in the
+family table (family 0 means no zone). No geometry is needed for this.
+
+*/
