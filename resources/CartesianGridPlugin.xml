@@ -4,7 +4,7 @@
 
 <meshers>
 
-<meshers-group name="CartesianGrid"
+<meshers-group name="CARTESIANGRID"
                resources="CartesianGridPlugin"
                server-lib="CartesianGridEngine"
                gui-lib="CartesianGridPluginGUI">
